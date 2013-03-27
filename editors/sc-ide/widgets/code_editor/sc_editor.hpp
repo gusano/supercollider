@@ -104,8 +104,11 @@ private:
     int indentationLevel( const QTextCursor & );
     void insertSpaceToNextTabStop( QTextCursor & );
 
-    bool insertMatchingTokens(const QString & token);
+    bool insertMatchingTokens( const QString & token );
     bool removeMatchingTokens();
+
+    bool cursorBetweenCurlyBrackets( QTextCursor & );
+    void addNewLineAfterCursor( QTextCursor & );
 
     int mIndentWidth;
     bool mSpaceIndent;

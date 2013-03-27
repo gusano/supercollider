@@ -119,6 +119,7 @@ void ScCodeEditor::keyPressEvent( QKeyEvent *e )
 
     bool indent_needed = false;
     bool handled = true;
+    bool enter_pressed = false;
 
     switch (e->key()) {
     case Qt::Key_Home:
@@ -162,7 +163,9 @@ void ScCodeEditor::keyPressEvent( QKeyEvent *e )
         GenericCodeEditor::keyPressEvent(e);
         break;
     case Qt::Key_Enter:
+        enter_pressed = true;
     case Qt::Key_Return:
+        enter_pressed = true;
     case Qt::Key_BraceRight:
     case Qt::Key_BracketRight:
     case Qt::Key_ParenRight:
@@ -176,6 +179,10 @@ void ScCodeEditor::keyPressEvent( QKeyEvent *e )
 
     if (!handled && mInsertMatchingTokens && !overwriteMode())
         handled = insertMatchingTokens(e->text());
+
+    if (enter_pressed)
+        if (cursorBetweenCurlyBrackets(cursor))
+            addNewLineAfterCursor(cursor);
 
     if (!handled)
         GenericCodeEditor::keyPressEvent(e);
@@ -436,6 +443,25 @@ bool ScCodeEditor::removeMatchingTokens()
 
     setTextCursor(cursor);
     return true;
+}
+
+bool ScCodeEditor::cursorBetweenCurlyBrackets( QTextCursor & cursor )
+{
+    QTextDocument *document = cursor.document();
+    int cursorPosition = cursor.position();
+    QChar previousChar = document->characterAt(cursorPosition-1);
+    QChar nextChar = document->characterAt(cursorPosition);
+
+    return previousChar == '{' && nextChar == '}';
+}
+
+void ScCodeEditor::addNewLineAfterCursor( QTextCursor & cursor )
+{
+    cursor.insertText("\n");
+    cursor.movePosition(QTextCursor::PreviousCharacter);
+    setTextCursor(cursor);
+
+    return;
 }
 
 QTextCursor ScCodeEditor::selectionForPosition( int position )
