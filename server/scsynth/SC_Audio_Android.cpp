@@ -4,7 +4,7 @@
     Incorporating code from
     SuperCollider real time audio synthesis system
     Copyright (c) 2002 James McCartney. All rights reserved.
-	http://www.audiosynth.com
+    http://www.audiosynth.com
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 #include <sys/time.h>
 
 SC_AndroidJNIAudioDriver::SC_AndroidJNIAudioDriver(struct World *inWorld)
-		: SC_AudioDriver(inWorld)
+        : SC_AudioDriver(inWorld)
 {
 }
 
@@ -37,52 +37,52 @@ SC_AndroidJNIAudioDriver::~SC_AndroidJNIAudioDriver()
 
 bool SC_AndroidJNIAudioDriver::DriverSetup(int* outNumSamplesPerCallback, double* outSampleRate)
 {
-	// Here we are setting these to the values that were originally passed in as options.
-	// In current android impl, these values came directly from java as args to scsynth_android_start().
-	*outNumSamplesPerCallback = mPreferredHardwareBufferFrameSize;
-	*outSampleRate = mPreferredSampleRate;
+    // Here we are setting these to the values that were originally passed in as options.
+    // In current android impl, these values came directly from java as args to scsynth_android_start().
+    *outNumSamplesPerCallback = mPreferredHardwareBufferFrameSize;
+    *outSampleRate = mPreferredSampleRate;
 
-	int audioDataSize = mPreferredHardwareBufferFrameSize * mWorld->mNumOutputs * sizeof(float);
+    int audioDataSize = mPreferredHardwareBufferFrameSize * mWorld->mNumOutputs * sizeof(float);
 #ifndef NDEBUG
-	scprintf("SC_AndroidJNIAudioDriver::DriverSetup: allocating %i bytes for %i frames\n", audioDataSize, mPreferredHardwareBufferFrameSize);
+    scprintf("SC_AndroidJNIAudioDriver::DriverSetup: allocating %i bytes for %i frames\n", audioDataSize, mPreferredHardwareBufferFrameSize);
 #endif
 
-	if(mWorld->mVerbosity >= 0){
-		scprintf("<-SC_AndroidJNIAudioDriver::Setup world %p, mPreferredHardwareBufferFrameSize %i, mPreferredSampleRate %i, outNumSamplesPerCallback %i, outSampleRate %g\n", 
-				mWorld, mPreferredHardwareBufferFrameSize, mPreferredSampleRate, *outNumSamplesPerCallback, *outSampleRate);
-	}
-	return true;
+    if(mWorld->mVerbosity >= 0){
+        scprintf("<-SC_AndroidJNIAudioDriver::Setup world %p, mPreferredHardwareBufferFrameSize %i, mPreferredSampleRate %i, outNumSamplesPerCallback %i, outSampleRate %g\n", 
+                mWorld, mPreferredHardwareBufferFrameSize, mPreferredSampleRate, *outNumSamplesPerCallback, *outSampleRate);
+    }
+    return true;
 }
 
 bool SC_AndroidJNIAudioDriver::DriverStart()
 {
-	if(mWorld->mVerbosity >= 0){
-		scprintf("SC_AndroidJNIAudioDriver::DriverStart\n");
-	}
-	// no-op, nothing to do here
-	return true;
+    if(mWorld->mVerbosity >= 0){
+        scprintf("SC_AndroidJNIAudioDriver::DriverStart\n");
+    }
+    // no-op, nothing to do here
+    return true;
 }
 
 bool SC_AndroidJNIAudioDriver::DriverStop()
 {
-	if(mWorld->mVerbosity >= 0){
-		scprintf("SC_AndroidJNIAudioDriver::DriverStop\n");
-	}
-	
-	// TODO: send a message back to java to say stop the audio loop
-	
-	return true;
+    if(mWorld->mVerbosity >= 0){
+        scprintf("SC_AndroidJNIAudioDriver::DriverStop\n");
+    }
+    
+    // TODO: send a message back to java to say stop the audio loop
+    
+    return true;
 }
 
 // NB numSamplesPassed genuinely is num samples (not num frames as sometimes in sc code)
 void SC_AndroidJNIAudioDriver::genaudio(short* arri, int numSamplesPassed)
 {
-	//scprintf("->SC_AndroidJNIAudioDriver::genaudio()\n");
-	
-	World *world = mWorld;
+    //scprintf("->SC_AndroidJNIAudioDriver::genaudio()\n");
+    
+    World *world = mWorld;
 
-	int numFramesPerCallback = NumSamplesPerCallback();
-	// mOSCbuftime = oscTime;   // TODO, how do we set this?
+    int numFramesPerCallback = NumSamplesPerCallback();
+    // mOSCbuftime = oscTime;   // TODO, how do we set this?
     mFromEngine.Free();
     mToEngine.Perform();
     mOscPacketsToEngine.Perform();
@@ -94,8 +94,8 @@ void SC_AndroidJNIAudioDriver::genaudio(short* arri, int numSamplesPassed)
     int numBufs = numFramesPerCallback / bufFrames;
 
 #ifndef NDEBUG
-	if((numFramesPerCallback * numOutputs) != numSamplesPassed)
-		scprintf("(numFramesPerCallback * numOutputs) != numSamplesPassed, %i %i\n", numFramesPerCallback, numOutputs, numSamplesPassed);
+    if((numFramesPerCallback * numOutputs) != numSamplesPassed)
+        scprintf("(numFramesPerCallback * numOutputs) != numSamplesPassed, %i %i\n", numFramesPerCallback, numOutputs, numSamplesPassed);
 #endif
 
     float *inBuses = mWorld->mAudioBus + mWorld->mNumOutputs * bufFrames;
@@ -105,7 +105,7 @@ void SC_AndroidJNIAudioDriver::genaudio(short* arri, int numSamplesPassed)
 
     int minInputs = std::min<size_t>(numInputs, mWorld->mNumInputs);
     int minOutputs = std::min<size_t>(numOutputs, mWorld->mNumOutputs);
-	
+    
     int bufFramePos = 0;
 
     int64 oscTime = mOSCbuftime;
@@ -151,8 +151,8 @@ void SC_AndroidJNIAudioDriver::genaudio(short* arri, int numSamplesPassed)
         // copy touched outputs
         tch = outTouched;
         for (int k = 0; k < minOutputs; ++k) {
-        	
-        	// OK, so the source is noninterleaved floats, target is an interleaved array of ints
+            
+            // OK, so the source is noninterleaved floats, target is an interleaved array of ints
             if (*tch++ == bufCounter) {
                 float *src = outBuses + k * bufFrames;
                 for (int frame = 0; frame < bufFrames; ++frame) arri[(bufFramePos+frame) * minOutputs + k] = (short)((*src++) * 32767.f);
@@ -165,35 +165,35 @@ void SC_AndroidJNIAudioDriver::genaudio(short* arri, int numSamplesPassed)
         oscTime = mOSCbuftime = nextTime;
     }
 
-	mAudioSync.Signal();
-	
+    mAudioSync.Signal();
+    
 }
 
 int64 gOSCoffset = 0;
 
 static inline int64 GetCurrentOSCTime()
 {
-	struct timeval tv;
-	uint64 s, f;
-	gettimeofday(&tv, 0);
-	s = (uint64)tv.tv_sec + (uint64)kSECONDS_FROM_1900_to_1970;
-	f = (uint64)((double)tv.tv_usec * kMicrosToOSCunits);
+    struct timeval tv;
+    uint64 s, f;
+    gettimeofday(&tv, 0);
+    s = (uint64)tv.tv_sec + (uint64)kSECONDS_FROM_1900_to_1970;
+    f = (uint64)((double)tv.tv_usec * kMicrosToOSCunits);
 
-	return (s << 32) + f;
+    return (s << 32) + f;
 }
 
 int64 oscTimeNow()
 {
-	return GetCurrentOSCTime();
+    return GetCurrentOSCTime();
 }
 
 int32 server_timeseed()
 {
-	int64 time = GetCurrentOSCTime();
-	return Hash((int32)(time >> 32) + Hash((int32)time));
+    int64 time = GetCurrentOSCTime();
+    return Hash((int32)(time >> 32) + Hash((int32)time));
 }
 
 void initializeScheduler()
 {
-	gOSCoffset = GetCurrentOSCTime();
+    gOSCoffset = GetCurrentOSCTime();
 }
