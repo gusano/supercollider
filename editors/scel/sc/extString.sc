@@ -18,18 +18,18 @@
 
 + String{
 
-	openHelpFileEmacs {
-		if ( Emacs.initialized) {
-			Emacs.evalLispExpression(['sclang-find-help', this].asLispString);
-		}
-	}
+    openHelpFileEmacs {
+        if ( Emacs.initialized) {
+            Emacs.evalLispExpression(['sclang-find-help', this].asLispString);
+        }
+    }
 
-	openHTMLFileEmacs {
-		if ( Emacs.initialized) {
-		//		this.findHelpFile;
-			Emacs.evalLispExpression(['w3m-browse-url', this].asLispString);
-		}
-	}
+    openHTMLFileEmacs {
+        if ( Emacs.initialized) {
+        //      this.findHelpFile;
+            Emacs.evalLispExpression(['w3m-browse-url', this].asLispString);
+        }
+    }
 }
 
 // EOF

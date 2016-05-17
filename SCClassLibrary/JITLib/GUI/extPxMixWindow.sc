@@ -22,57 +22,57 @@ n.shiftArBorder(-10);
 */
 + ProxyMixer {
 
-	enableNameResize { |flag = true|
-		var canDrag = false;
+    enableNameResize { |flag = true|
+        var canDrag = false;
 
-		if (flag) {
-			arZone.mouseDownAction = { |arZone, x, y|
-				// if between slider and nameView, startDrag
-				var nameLeft = this.getNameLeftBorder;
-				canDrag = x.absdif(nameLeft) < 15;
-			};
+        if (flag) {
+            arZone.mouseDownAction = { |arZone, x, y|
+                // if between slider and nameView, startDrag
+                var nameLeft = this.getNameLeftBorder;
+                canDrag = x.absdif(nameLeft) < 15;
+            };
 
-			arZone.mouseMoveAction = { |arZone, x, y|
-				if (canDrag) { this.setNameLeftBorder(x.postln) };
-			};
+            arZone.mouseMoveAction = { |arZone, x, y|
+                if (canDrag) { this.setNameLeftBorder(x.postln) };
+            };
 
-			arZone.mouseUpAction = { canDrag = false };
-		} {
-			arZone.mouseDownAction = nil;
-			arZone.mouseMoveAction = nil;
-			arZone.mouseUpAction = nil;
-		}
-	}
+            arZone.mouseUpAction = { canDrag = false };
+        } {
+            arZone.mouseDownAction = nil;
+            arZone.mouseMoveAction = nil;
+            arZone.mouseUpAction = nil;
+        }
+    }
 
-	makeWindow {
-		parent = Window(this.winName,
-			bounds.copy.resizeBy(10, 10),
-			resizable: false
-		).front;
-		parent.addFlowLayout;
-		hasWindow = true;
-	}
+    makeWindow {
+        parent = Window(this.winName,
+            bounds.copy.resizeBy(10, 10),
+            resizable: false
+        ).front;
+        parent.addFlowLayout;
+        hasWindow = true;
+    }
 
-	getNameLeftBorder {
-		^arGuis[0].nameView.bounds.left;
-	}
+    getNameLeftBorder {
+        ^arGuis[0].nameView.bounds.left;
+    }
 
-	setNameLeftBorder { |xpos = 250|
-		arGuis.do { |ag|
-			var moniZone =  ag.monitorGui.zone;
-			var nvbnds = ag.nameView.bounds;
-			var nvbndsRight = nvbnds.right;
+    setNameLeftBorder { |xpos = 250|
+        arGuis.do { |ag|
+            var moniZone =  ag.monitorGui.zone;
+            var nvbnds = ag.nameView.bounds;
+            var nvbndsRight = nvbnds.right;
 
-			moniZone.bounds_(moniZone.bounds.width_(xpos));
+            moniZone.bounds_(moniZone.bounds.width_(xpos));
 
-			nvbnds = nvbnds.left_(xpos);
-			nvbnds = nvbnds.width_(nvbndsRight - xpos);
-			ag.nameView.bounds_(nvbnds);
-		}
-	}
+            nvbnds = nvbnds.left_(xpos);
+            nvbnds = nvbnds.width_(nvbndsRight - xpos);
+            ag.nameView.bounds_(nvbnds);
+        }
+    }
 
-	shiftNameLeftBorder { |x = 0|
-		this.setNameLeftBorder(this.getNameLeftBorder + x);
-	}
+    shiftNameLeftBorder { |x = 0|
+        this.setNameLeftBorder(this.getNameLeftBorder + x);
+    }
 
 }

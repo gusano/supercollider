@@ -1,5 +1,5 @@
 + FunctionDef {
-	homeContext {
-		^if (context.isNil) { this } { context.homeContext }
-	}
+    homeContext {
+        ^if (context.isNil) { this } { context.homeContext }
+    }
 }

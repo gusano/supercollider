@@ -4,52 +4,52 @@
 
 EventStreamCleanup {
 
-	var <>functions;		// cleanup functions from child streams and parent stream
+    var <>functions;        // cleanup functions from child streams and parent stream
 
-	*new { ^super.new.clear }
+    *new { ^super.new.clear }
 
-	clear {
-		functions = IdentitySet.new;
-	}
+    clear {
+        functions = IdentitySet.new;
+    }
 
-	addFunction { |event, function |
-		if(event.isKindOf(Dictionary)) {
-			functions.add(function);
-			event[\addToCleanup] = event[\addToCleanup].add(function);
-		};
-	}
+    addFunction { |event, function |
+        if(event.isKindOf(Dictionary)) {
+            functions.add(function);
+            event[\addToCleanup] = event[\addToCleanup].add(function);
+        };
+    }
 
-	addNodeCleanup { |event, function |
-		if(event.isKindOf(Dictionary)) {
-			functions.add(function);
-			event[\addToNodeCleanup] = event[\addToNodeCleanup].add(function);
-		};
-	}
+    addNodeCleanup { |event, function |
+        if(event.isKindOf(Dictionary)) {
+            functions.add(function);
+            event[\addToNodeCleanup] = event[\addToNodeCleanup].add(function);
+        };
+    }
 
-	update { | event |
-		if(event.isKindOf(Dictionary)) {
-			functions.addAll(event[\addToNodeCleanup]);
-			functions.addAll(event[\addToCleanup]);
-			functions.removeAll(event[\removeFromCleanup]);
-		};
-		^event
-	}
+    update { | event |
+        if(event.isKindOf(Dictionary)) {
+            functions.addAll(event[\addToNodeCleanup]);
+            functions.addAll(event[\addToCleanup]);
+            functions.removeAll(event[\removeFromCleanup]);
+        };
+        ^event
+    }
 
-	exit { | event, freeNodes = true |
-		if(event.isKindOf(Dictionary)) {
-			this.update(event);
-			if(functions.notEmpty) {
-				functions.do(_.value(freeNodes) );
-				event[\removeFromCleanup] = event[\removeFromCleanup].addAll(functions);
-			};
-			this.clear;
-		};
-		^event
-	}
+    exit { | event, freeNodes = true |
+        if(event.isKindOf(Dictionary)) {
+            this.update(event);
+            if(functions.notEmpty) {
+                functions.do(_.value(freeNodes) );
+                event[\removeFromCleanup] = event[\removeFromCleanup].addAll(functions);
+            };
+            this.clear;
+        };
+        ^event
+    }
 
-	terminate { | freeNodes = true |
-		functions.do(_.value(freeNodes));
-		this.clear
-	}
+    terminate { | freeNodes = true |
+        functions.do(_.value(freeNodes));
+        this.clear
+    }
 
 }

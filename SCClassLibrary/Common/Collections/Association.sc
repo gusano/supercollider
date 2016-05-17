@@ -1,34 +1,34 @@
 Association : Magnitude {
-	var <>key, <>value;
+    var <>key, <>value;
 
-	*new { arg key, value;
-		^super.newCopyArgs(key, value)
-	}
+    *new { arg key, value;
+        ^super.newCopyArgs(key, value)
+    }
 
-	== { arg anAssociation;
-		^anAssociation respondsTo: \key and: { key == anAssociation.key }
-	}
+    == { arg anAssociation;
+        ^anAssociation respondsTo: \key and: { key == anAssociation.key }
+    }
 
-	hash {
-		^key.hash
-	}
+    hash {
+        ^key.hash
+    }
 
-	< { arg anAssociation;
-		^key < anAssociation.key
-	}
+    < { arg anAssociation;
+        ^key < anAssociation.key
+    }
 
-	printOn { arg stream;
-		stream << "(" << key << " -> " << value << ")";
-	}
-	storeOn { arg stream;
-		stream << "(" <<< key << " -> " <<< value << ")";
-	}
+    printOn { arg stream;
+        stream << "(" << key << " -> " << value << ")";
+    }
+    storeOn { arg stream;
+        stream << "(" <<< key << " -> " <<< value << ")";
+    }
 
-	// Pattern support
-	embedInStream { arg inval;
-		^inval.add(this).yield;
-	}
-	transformEvent { arg event;
-		^event.add(this);
-	}
+    // Pattern support
+    embedInStream { arg inval;
+        ^inval.add(this).yield;
+    }
+    transformEvent { arg event;
+        ^event.add(this);
+    }
 }

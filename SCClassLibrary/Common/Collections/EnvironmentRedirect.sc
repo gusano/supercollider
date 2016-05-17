@@ -2,185 +2,185 @@
 
 EnvironmentRedirect {
 
-	var <envir;
-	var <dispatch;
+    var <envir;
+    var <dispatch;
 
-	*new { arg envir;
-		^super.newCopyArgs(envir ?? { Environment.new(32, Environment.new) })
-	}
-	*make { arg function;
-		^this.new.make(function)
-	}
-	*use { arg function;
-		^this.new.use(function)
-	}
-	*newFrom { arg aCollection;
-		var newCollection = this.new;
-		aCollection.keysValuesDo({ arg k,v, i; newCollection.put(k,v) });
-		^newCollection
-	}
+    *new { arg envir;
+        ^super.newCopyArgs(envir ?? { Environment.new(32, Environment.new) })
+    }
+    *make { arg function;
+        ^this.new.make(function)
+    }
+    *use { arg function;
+        ^this.new.use(function)
+    }
+    *newFrom { arg aCollection;
+        var newCollection = this.new;
+        aCollection.keysValuesDo({ arg k,v, i; newCollection.put(k,v) });
+        ^newCollection
+    }
 
-	// override in subclasses
+    // override in subclasses
 
-	at { arg key;
-		^envir.at(key)
-	}
+    at { arg key;
+        ^envir.at(key)
+    }
 
-	put { arg key, obj;
-		envir.put(key, obj);
-		dispatch.value(key, obj);
-	}
+    put { arg key, obj;
+        envir.put(key, obj);
+        dispatch.value(key, obj);
+    }
 
-	localPut { arg key, obj;
-		envir.put(key, obj)
-	}
+    localPut { arg key, obj;
+        envir.put(key, obj)
+    }
 
-	removeAt { arg key;
-		^envir.removeAt(key)
-	}
+    removeAt { arg key;
+        ^envir.removeAt(key)
+    }
 
-	// behave like environment
-
-
-	*push {
-		^this.new.push;
-	}
-
-	*pop {
-		^Environment.pop;
-	}
-
-	pop {
-		^Environment.pop
-	}
-
-	push {
-		if(currentEnvironment !== this) {
-			Environment.push(this)
-		} { "this environment is already current".warn }
-	}
+    // behave like environment
 
 
-	make { arg function;
-		// pushes the Envir, executes function, returns the Envir
-		// usually used to create an environment by adding new variables to it.
-		var result, saveEnvir;
+    *push {
+        ^this.new.push;
+    }
 
-		saveEnvir = currentEnvironment;
-		currentEnvironment = this;
-		protect {
-			function.value(this);
-		}{
-			currentEnvironment = saveEnvir;
-		};
-	}
+    *pop {
+        ^Environment.pop;
+    }
 
-	use { arg function;
-		// temporarily replaces the currentEnvironment with this,
-		// executes function, returns the result of the function
-		var result, saveEnvir;
+    pop {
+        ^Environment.pop
+    }
 
-		saveEnvir = currentEnvironment;
-		currentEnvironment = this;
-		protect {
-			result = function.value(this);
-		}{
-			currentEnvironment = saveEnvir;
-		};
-		^result
-	}
+    push {
+        if(currentEnvironment !== this) {
+            Environment.push(this)
+        } { "this environment is already current".warn }
+    }
 
-	do { arg function;
-		envir.do(function)
-	}
 
-	keysValuesDo { arg function;
-		envir.keysValuesDo(function);
-	}
+    make { arg function;
+        // pushes the Envir, executes function, returns the Envir
+        // usually used to create an environment by adding new variables to it.
+        var result, saveEnvir;
 
-	keysValuesArrayDo { arg argArray, function;
-		envir.keysValuesArrayDo(argArray, function);
-	}
+        saveEnvir = currentEnvironment;
+        currentEnvironment = this;
+        protect {
+            function.value(this);
+        }{
+            currentEnvironment = saveEnvir;
+        };
+    }
 
-	findKeyForValue { arg val;
-		^envir.findKeyForValue(val)
-	}
+    use { arg function;
+        // temporarily replaces the currentEnvironment with this,
+        // executes function, returns the result of the function
+        var result, saveEnvir;
 
-	sortedKeysValuesDo { arg function;
-		envir.sortedKeysValuesDo(function);
-	}
+        saveEnvir = currentEnvironment;
+        currentEnvironment = this;
+        protect {
+            result = function.value(this);
+        }{
+            currentEnvironment = saveEnvir;
+        };
+        ^result
+    }
 
-	putAll { arg ... dictionaries;
-		dictionaries.do {|dict|
-			dict.keysValuesDo { arg key, value;
-				this.put(key, value)
-			}
-		}
-	}
+    do { arg function;
+        envir.do(function)
+    }
 
-	add { arg anAssociation;
-		this.put(anAssociation.key, anAssociation.value);
-	}
+    keysValuesDo { arg function;
+        envir.keysValuesDo(function);
+    }
 
-	choose {
-		^envir.choose
-	}
+    keysValuesArrayDo { arg argArray, function;
+        envir.keysValuesArrayDo(argArray, function);
+    }
 
-	clear { envir.clear }
+    findKeyForValue { arg val;
+        ^envir.findKeyForValue(val)
+    }
 
-	know_ { arg flag; envir.know = flag }
-	know { ^envir.know }
+    sortedKeysValuesDo { arg function;
+        envir.sortedKeysValuesDo(function);
+    }
 
-	doesNotUnderstand { arg selector ... args;
-		var func;
-		if (this.know) {
-			if (selector.isSetter) {
-				selector = selector.asGetter;
-				^this[selector] = args[0];
-			};
-			^this.doFunctionPerform(selector, args)
+    putAll { arg ... dictionaries;
+        dictionaries.do {|dict|
+            dict.keysValuesDo { arg key, value;
+                this.put(key, value)
+            }
+        }
+    }
 
-		};
-		^this.superPerformList(\doesNotUnderstand, selector, args);
-	}
+    add { arg anAssociation;
+        this.put(anAssociation.key, anAssociation.value);
+    }
 
-	doFunctionPerform { arg selector, args;
-		envir[\forward] !? {
-			if(envir[selector].isNil) {
-				^envir[\forward].functionPerformList(\value, this, selector, args);
-			}
-		};
-		^this[selector].functionPerformList(\value, this, args);
-	}
+    choose {
+        ^envir.choose
+    }
 
-	printOn { | stream |
-		if (stream.atLimit) { ^this };
-		stream << this.class.name << "[ " ;
-		envir.printItemsOn(stream);
-		stream << " ]" ;
-	}
+    clear { envir.clear }
 
-	linkDoc { arg doc, pushNow=true;
-		doc = doc ? Document.current;
-		doc.envir_(this);
-		if(pushNow and: { currentEnvironment !== this }) { this.push };
-	}
+    know_ { arg flag; envir.know = flag }
+    know { ^envir.know }
 
-	unlinkDoc { arg doc, popNow = false;
-		doc = doc ? Document.current;
-		if(doc.envir === this) { doc.envir_(nil) };
-		if(popNow and:  { currentEnvironment === this }) { this.pop };
-	}
+    doesNotUnderstand { arg selector ... args;
+        var func;
+        if (this.know) {
+            if (selector.isSetter) {
+                selector = selector.asGetter;
+                ^this[selector] = args[0];
+            };
+            ^this.doFunctionPerform(selector, args)
 
-	// networking
-	dispatch_ { arg disp;
-		dispatch = disp;
-		if(disp.respondsTo(\envir_)) { disp.envir_(this) };
-	}
-	envir_ { arg argEnvir;
-		envir = argEnvir;
-		if(dispatch.notNil) { this.dispatch = dispatch };
-	}
+        };
+        ^this.superPerformList(\doesNotUnderstand, selector, args);
+    }
+
+    doFunctionPerform { arg selector, args;
+        envir[\forward] !? {
+            if(envir[selector].isNil) {
+                ^envir[\forward].functionPerformList(\value, this, selector, args);
+            }
+        };
+        ^this[selector].functionPerformList(\value, this, args);
+    }
+
+    printOn { | stream |
+        if (stream.atLimit) { ^this };
+        stream << this.class.name << "[ " ;
+        envir.printItemsOn(stream);
+        stream << " ]" ;
+    }
+
+    linkDoc { arg doc, pushNow=true;
+        doc = doc ? Document.current;
+        doc.envir_(this);
+        if(pushNow and: { currentEnvironment !== this }) { this.push };
+    }
+
+    unlinkDoc { arg doc, popNow = false;
+        doc = doc ? Document.current;
+        if(doc.envir === this) { doc.envir_(nil) };
+        if(popNow and:  { currentEnvironment === this }) { this.pop };
+    }
+
+    // networking
+    dispatch_ { arg disp;
+        dispatch = disp;
+        if(disp.respondsTo(\envir_)) { disp.envir_(this) };
+    }
+    envir_ { arg argEnvir;
+        envir = argEnvir;
+        if(dispatch.notNil) { this.dispatch = dispatch };
+    }
 
 }
 
@@ -188,52 +188,52 @@ EnvironmentRedirect {
 
 
 LazyEnvir : EnvironmentRedirect {
-	var <>proxyClass=\Maybe;
+    var <>proxyClass=\Maybe;
 
-	makeProxy {
-		^proxyClass.asClass.new
-	}
+    makeProxy {
+        ^proxyClass.asClass.new
+    }
 
-	at { arg key;
-		var proxy;
-		proxy = super.at(key);
-		if(proxy.isNil) {
-			proxy = this.makeProxy(key);
-			envir.put(key, proxy);
-		};
-		^proxy
+    at { arg key;
+        var proxy;
+        proxy = super.at(key);
+        if(proxy.isNil) {
+            proxy = this.makeProxy(key);
+            envir.put(key, proxy);
+        };
+        ^proxy
 
-	}
+    }
 
-	put { arg key, obj;
-		this.at(key).source_(obj);
-		dispatch.value(key, obj); // forward to dispatch for networking
-	}
+    put { arg key, obj;
+        this.at(key).source_(obj);
+        dispatch.value(key, obj); // forward to dispatch for networking
+    }
 
-	removeAt { arg key;
-		var proxy;
-		proxy = envir.removeAt(key);
-		if(proxy.notNil) { proxy.clear };
-	}
+    removeAt { arg key;
+        var proxy;
+        proxy = envir.removeAt(key);
+        if(proxy.notNil) { proxy.clear };
+    }
 
-	localPut { arg key, obj;
-		this.at(key).source_(obj);
-	}
+    localPut { arg key, obj;
+        this.at(key).source_(obj);
+    }
 
-	copy {
-		var result = this.class.new;
-		dispatch !? { result.dispatch = dispatch };
-		envir.keysValuesDo { |key, val|
-			result.envir[key] = val.copy;
-		};
-		^result
-	}
+    copy {
+        var result = this.class.new;
+        dispatch !? { result.dispatch = dispatch };
+        envir.keysValuesDo { |key, val|
+            result.envir[key] = val.copy;
+        };
+        ^result
+    }
 
-	storeOn { | stream |
-		if (stream.atLimit) { ^this };
-		stream << this.class.name << ".newFrom([" ;
-		stream <<<* envir.getPairs.collect { |x, i| if(i.even) { x } { x.source } };
-		stream << "])" ;
-	}
+    storeOn { | stream |
+        if (stream.atLimit) { ^this };
+        stream << this.class.name << ".newFrom([" ;
+        stream <<<* envir.getPairs.collect { |x, i| if(i.even) { x } { x.source } };
+        stream << "])" ;
+    }
 
 }

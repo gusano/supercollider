@@ -1,3 +1,3 @@
 + Main {
-	platformClass { ^LinuxPlatform }
+    platformClass { ^LinuxPlatform }
 }

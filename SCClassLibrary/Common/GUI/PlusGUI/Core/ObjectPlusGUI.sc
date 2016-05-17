@@ -1,5 +1,5 @@
 + Object {
-	mouseDown { ^nil }
-	mouseOver { ^nil }
-	keyDown { }
+    mouseDown { ^nil }
+    mouseOver { ^nil }
+    keyDown { }
 }

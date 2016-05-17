@@ -1,24 +1,24 @@
 + AbstractGroup {
-	asGroup {}
+    asGroup {}
 }
 
 + Nil {
-	asGroup {
-		^Group.basicNew(this, 1)
-	}
+    asGroup {
+        ^Group.basicNew(this, 1)
+    }
 }
 + Server {
-	asGroup {
-		^Group.basicNew(this, 1)
-	}
+    asGroup {
+        ^Group.basicNew(this, 1)
+    }
 }
 + Synth {
-	asGroup {
-		^this.group
-	}
+    asGroup {
+        ^this.group
+    }
 }
 + Integer {
-	asGroup {
-		^Group.basicNew(nil, this)
-	}
+    asGroup {
+        ^Group.basicNew(nil, this)
+    }
 }

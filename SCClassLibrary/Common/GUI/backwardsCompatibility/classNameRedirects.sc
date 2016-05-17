@@ -68,23 +68,23 @@ QScope2 : ScopeView {}
 
 
 + Object {
-	// this isn't really needed, but some third party may be relying on it.
-	*implClass { ^this }
+    // this isn't really needed, but some third party may be relying on it.
+    *implClass { ^this }
 
 }
 
 // these were already removed, but it is better to deprecate them
 + Window {
-	drawHook_ { |func|
-		this.deprecated(thisMethod, this.class.findRespondingMethodFor('drawFunc_'));
-		this.drawFunc_(func);
-	}
+    drawHook_ { |func|
+        this.deprecated(thisMethod, this.class.findRespondingMethodFor('drawFunc_'));
+        this.drawFunc_(func);
+    }
 }
 
 
 + UserView {
-	drawHook_ { |func|
-		this.deprecated(thisMethod, this.class.findRespondingMethodFor('drawFunc_'));
-		this.drawFunc_(func);
-	}
+    drawHook_ { |func|
+        this.deprecated(thisMethod, this.class.findRespondingMethodFor('drawFunc_'));
+        this.drawFunc_(func);
+    }
 }

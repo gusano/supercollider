@@ -1,19 +1,19 @@
 InfoUGenBase : UGen {
-	*ir {
-		^this.multiNew('scalar')
-	}
+    *ir {
+        ^this.multiNew('scalar')
+    }
 }
 
 BufInfoUGenBase : UGen {
-	*kr { arg bufnum;
-		^this.multiNew('control', bufnum)
-	}
+    *kr { arg bufnum;
+        ^this.multiNew('control', bufnum)
+    }
 
-	// the .ir method is not the safest choice. Since a buffer can be reallocated at any time,
-	// using .ir will not track the changes.
-	*ir { arg bufnum;
-		^this.multiNew('scalar',bufnum)
-	}
+    // the .ir method is not the safest choice. Since a buffer can be reallocated at any time,
+    // using .ir will not track the changes.
+    *ir { arg bufnum;
+        ^this.multiNew('scalar',bufnum)
+    }
 }
 
 SampleRate : InfoUGenBase {}
@@ -31,9 +31,9 @@ NumControlBuses : InfoUGenBase {}
 NumBuffers : InfoUGenBase {}
 NodeID : InfoUGenBase {}
 NumRunningSynths : InfoUGenBase {
-	*kr {
-		^this.multiNew('control')
-	}
+    *kr {
+        ^this.multiNew('control')
+    }
 }
 
 BufSampleRate : BufInfoUGenBase {}

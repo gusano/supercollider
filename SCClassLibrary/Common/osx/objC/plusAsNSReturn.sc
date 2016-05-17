@@ -1,14 +1,14 @@
 + Object {
 
-	asNSReturn{
-		^this
-	}
+    asNSReturn{
+        ^this
+    }
 
 }
 
 + RawPointer{
 
-	asNSReturn{
-		^SCNSObject.newFromRawPointer(this)
-	}
+    asNSReturn{
+        ^SCNSObject.newFromRawPointer(this)
+    }
 }

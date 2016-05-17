@@ -1,38 +1,38 @@
 + Object {
-	valueFuncProxy {
-		^this
-	}
+    valueFuncProxy {
+        ^this
+    }
 
-	reduceFuncProxy {
-		^this
-	}
+    reduceFuncProxy {
+        ^this
+    }
 
-	postString {
-		^this.asString
-	}
+    postString {
+        ^this.asString
+    }
 }
 
 + AbstractFunction {
-	reduceFuncProxy { arg args;
-		^this.valueArray(args).valueFuncProxy(args)
-	}
+    reduceFuncProxy { arg args;
+        ^this.valueArray(args).valueFuncProxy(args)
+    }
 
 }
 
 + Function {
-	postString {
-		^this.asCompileString
-	}
+    postString {
+        ^this.asCompileString
+    }
 }
 
 + UnaryOpFunctionProxy {
-	postString {
-		^a.postString ++ "." ++ selector
-	}
+    postString {
+        ^a.postString ++ "." ++ selector
+    }
 }
 
 + BinaryOpFunctionProxy {
-	postString {
-		^a.postString + selector.asBinOpString + b.postString
-	}
+    postString {
+        ^a.postString + selector.asBinOpString + b.postString
+    }
 }

@@ -1,6 +1,6 @@
 Unix {
-	*errno {
-		_Unix_Errno
-		^this.primitiveFailed
-	}
+    *errno {
+        _Unix_Errno
+        ^this.primitiveFailed
+    }
 }

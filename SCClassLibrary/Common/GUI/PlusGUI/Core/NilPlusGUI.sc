@@ -1,8 +1,8 @@
 + Nil {
-	// nil parent view
-	asView {}
+    // nil parent view
+    asView {}
 
-	// graphical support
-	asRect { ^Rect.new }
-	asArray { ^[] }
+    // graphical support
+    asRect { ^Rect.new }
+    asArray { ^[] }
 }

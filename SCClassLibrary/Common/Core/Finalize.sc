@@ -17,11 +17,11 @@ You should put your C function pointer into cFunction, and the finalizable objec
 */
 
 Finalizer {
-	var cFunction, object; // no getters or setters!
+    var cFunction, object; // no getters or setters!
 
-	// no *new method! Create in a primitive.
+    // no *new method! Create in a primitive.
 
-	//finalize { _Finalize }
-	notFinalized { ^cFunction.notNil }
-	isFinalized { ^cFunction.isNil }
+    //finalize { _Finalize }
+    notFinalized { ^cFunction.notNil }
+    isFinalized { ^cFunction.isNil }
 }

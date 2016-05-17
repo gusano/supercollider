@@ -1,3 +1,3 @@
 + Main {
-	platformClass { ^IPhonePlatform }
+    platformClass { ^IPhonePlatform }
 }
