@@ -1,7 +1,7 @@
 /*
-	SuperCollider real time audio synthesis system
+    SuperCollider real time audio synthesis system
  Copyright (c) 2002 James McCartney. All rights reserved.
-	http://www.audiosynth.com
+    http://www.audiosynth.com
 
  This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -44,152 +44,152 @@ static void finaldecision(BeatTrack2 *unit);
 
 void BeatTrack2_Ctor(BeatTrack2* unit)
 {
-	//unit->m_srate = unit->mWorld->mFullRate.mSampleRate;
-	float kblocklength=  unit->mWorld->mFullRate.mBufDuration; //seconds per control block
-	unit->m_krlength= kblocklength;
-	//N features per block over numphases*2 variants for one of 120 tempi, so need at least 120 blocks to complete
+    //unit->m_srate = unit->mWorld->mFullRate.mSampleRate;
+    float kblocklength=  unit->mWorld->mFullRate.mBufDuration; //seconds per control block
+    unit->m_krlength= kblocklength;
+    //N features per block over numphases*2 variants for one of 120 tempi, so need at least 120 blocks to complete
 
-	unit->m_phaseaccuracy = ZIN0(3); //0.02; //20 msec resolution; could be argument of UGen
+    unit->m_phaseaccuracy = ZIN0(3); //0.02; //20 msec resolution; could be argument of UGen
 
-	unit->m_numphases = (int*)RTAlloc(unit->mWorld, g_numtempi * sizeof(int));
-	//unit->m_phases = (float**)RTAlloc(unit->mWorld, g_numtempi * sizeof(float*));
+    unit->m_numphases = (int*)RTAlloc(unit->mWorld, g_numtempi * sizeof(int));
+    //unit->m_phases = (float**)RTAlloc(unit->mWorld, g_numtempi * sizeof(float*));
 
-	for (int j=0; j<g_numtempi; ++j) {
+    for (int j=0; j<g_numtempi; ++j) {
 
-		float period= g_periods[j];
+        float period= g_periods[j];
 
-		int num= (int)(period/unit->m_phaseaccuracy); //maximum will be 1.0/0.02 = 50
+        int num= (int)(period/unit->m_phaseaccuracy); //maximum will be 1.0/0.02 = 50
 
-		unit->m_numphases[j]=num;
+        unit->m_numphases[j]=num;
 
-		//
-		//	unit->m_phases[j]= (float*)RTAlloc(unit->mWorld, unit->m_numphases[j] * sizeof(float));
-		//
-		//	float phase=0.0;
-		//
-		//	for (i=0; i<num; ++i) {
-		//	unit->m_phases[j][i] = phase;
-		//	phase += unit->m_phaseaccuracy;
-		//	}
+        //
+        //  unit->m_phases[j]= (float*)RTAlloc(unit->mWorld, unit->m_numphases[j] * sizeof(float));
+        //
+        //  float phase=0.0;
+        //
+        //  for (i=0; i<num; ++i) {
+        //  unit->m_phases[j][i] = phase;
+        //  phase += unit->m_phaseaccuracy;
+        //  }
 
-	}
+    }
 
-	unit->m_numfeatures = (int)(ZIN0(1)+0.001);
-
-
-
-	//for efficiency
-	unit->m_scores= (float*)RTAlloc(unit->mWorld, (2*unit->m_numfeatures) * sizeof(float));
-
-	unit->m_temporalwindowsize= ZIN0(2); //typically small, 2 seconds for fast reactions compared to 6 secs for BeatTrack
-
-	unit->m_fullwindowsize = unit->m_temporalwindowsize + 1.0 + 0.1; //plus one to cover all phases of the 60bpm based period, and a further 0.1 for indexing safety; ie looking at areas around the point you're interested in
-
-	unit->m_buffersize = (int)(unit->m_fullwindowsize/unit->m_krlength); //in control blocks
-
-
-	//printf("loading test blocklength %f numfeatures %d temporal %f full %f blocks %d \n",unit->m_krlength, unit->m_numfeatures, unit->m_temporalwindowsize, unit->m_fullwindowsize, unit->m_buffersize);
+    unit->m_numfeatures = (int)(ZIN0(1)+0.001);
 
 
 
-	//float ** m_pastfeatures;  //for each feature, a trail of last m_workingmemorysize values
-	unit->m_pastfeatures = (float**)RTAlloc(unit->mWorld, unit->m_numfeatures * sizeof(float*));
+    //for efficiency
+    unit->m_scores= (float*)RTAlloc(unit->mWorld, (2*unit->m_numfeatures) * sizeof(float));
 
-	for (int j=0; j<unit->m_numfeatures; ++j) {
+    unit->m_temporalwindowsize= ZIN0(2); //typically small, 2 seconds for fast reactions compared to 6 secs for BeatTrack
 
-		unit->m_pastfeatures[j]= (float*)RTAlloc(unit->mWorld, unit->m_buffersize * sizeof(float));
+    unit->m_fullwindowsize = unit->m_temporalwindowsize + 1.0 + 0.1; //plus one to cover all phases of the 60bpm based period, and a further 0.1 for indexing safety; ie looking at areas around the point you're interested in
 
-		Clear(unit->m_buffersize, unit->m_pastfeatures[j]); //set all to zero at first
-
-		//for (i=0; i<unit->m_buffersize; ++i) {
-		//	unit->m_pastfeatures[j][i] = 0.0;
-		//	}
-		//
-	}
-
-	//main counter
-	unit->m_counter= 0;
-
-	//could avoid allocation by having a hard limit on
-	unit->bestscore= (float*)RTAlloc(unit->mWorld, 4 * unit->m_numfeatures * sizeof(float));
-	unit->bestphase= (int*)RTAlloc(unit->mWorld, 4 * unit->m_numfeatures * sizeof(int));
-	unit->besttempo= (int*)RTAlloc(unit->mWorld, 4 * unit->m_numfeatures * sizeof(int));
-	unit->bestgroove= (int*)RTAlloc(unit->mWorld, 4 * unit->m_numfeatures * sizeof(int));
-
-	for (int i=0; i<4; ++i) {
-
-		int basepos= i*unit->m_numfeatures;
-
-		for (int j=0; j<unit->m_numfeatures; ++j) {
-			unit->bestscore[basepos+j]= -9999.0;
-			unit->bestphase[basepos+j]= 0;
-			unit->besttempo[basepos+j]= 60;
-			unit->bestgroove[basepos+j]= 0;
-		}
-	}
-
-	unit->m_phase= 0.0;
-	unit->m_period= 0.5;
-	unit->m_groove= 0;
-	unit->m_currtempo=2;
-	unit->m_phaseperblock= unit->m_krlength/unit->m_period;
-
-	unit->m_predictphase= 0.4f;
-	unit->m_predictperiod = 0.3f;
+    unit->m_buffersize = (int)(unit->m_fullwindowsize/unit->m_krlength); //in control blocks
 
 
-	unit->m_outputphase= unit->m_phase;
-	unit->m_outputtempo= unit->m_currtempo;
-	unit->m_outputgroove= unit->m_groove;
-	unit->m_outputphaseperblock= unit->m_phaseperblock;
+    //printf("loading test blocklength %f numfeatures %d temporal %f full %f blocks %d \n",unit->m_krlength, unit->m_numfeatures, unit->m_temporalwindowsize, unit->m_fullwindowsize, unit->m_buffersize);
 
 
 
-	unit->m_calculationperiod= 0.5; //every half second; could also be additional argument to UGen
-	unit->m_calculationschedule= 0.0;
+    //float ** m_pastfeatures;  //for each feature, a trail of last m_workingmemorysize values
+    unit->m_pastfeatures = (float**)RTAlloc(unit->mWorld, unit->m_numfeatures * sizeof(float*));
 
-	//printf("srate %f conversion factor %f frame period %f \n", unit->m_srate, unit->m_srateconversion, unit->m_frameperiod);
+    for (int j=0; j<unit->m_numfeatures; ++j) {
+
+        unit->m_pastfeatures[j]= (float*)RTAlloc(unit->mWorld, unit->m_buffersize * sizeof(float));
+
+        Clear(unit->m_buffersize, unit->m_pastfeatures[j]); //set all to zero at first
+
+        //for (i=0; i<unit->m_buffersize; ++i) {
+        //  unit->m_pastfeatures[j][i] = 0.0;
+        //  }
+        //
+    }
+
+    //main counter
+    unit->m_counter= 0;
+
+    //could avoid allocation by having a hard limit on
+    unit->bestscore= (float*)RTAlloc(unit->mWorld, 4 * unit->m_numfeatures * sizeof(float));
+    unit->bestphase= (int*)RTAlloc(unit->mWorld, 4 * unit->m_numfeatures * sizeof(int));
+    unit->besttempo= (int*)RTAlloc(unit->mWorld, 4 * unit->m_numfeatures * sizeof(int));
+    unit->bestgroove= (int*)RTAlloc(unit->mWorld, 4 * unit->m_numfeatures * sizeof(int));
+
+    for (int i=0; i<4; ++i) {
+
+        int basepos= i*unit->m_numfeatures;
+
+        for (int j=0; j<unit->m_numfeatures; ++j) {
+            unit->bestscore[basepos+j]= -9999.0;
+            unit->bestphase[basepos+j]= 0;
+            unit->besttempo[basepos+j]= 60;
+            unit->bestgroove[basepos+j]= 0;
+        }
+    }
+
+    unit->m_phase= 0.0;
+    unit->m_period= 0.5;
+    unit->m_groove= 0;
+    unit->m_currtempo=2;
+    unit->m_phaseperblock= unit->m_krlength/unit->m_period;
+
+    unit->m_predictphase= 0.4f;
+    unit->m_predictperiod = 0.3f;
 
 
-	int bufnum = (int)(ZIN0(5)+0.001f);
-	if (bufnum >= unit->mWorld->mNumSndBufs)
-		bufnum = 0;
-
-	if (bufnum<0)
-		unit->m_weightingscheme = bufnum<2 ? 0 : 1;
-	else {
-		SndBuf *buf = unit->mWorld->mSndBufs + bufnum;
-		unit->m_tempoweights= buf;
-		unit->m_weightingscheme=2;
-	}
-
-	//printf("bufnum %d weightingscheme %d check %f %f\n", bufnum, unit->m_weightingscheme, unit->m_tempoweights[0], unit->m_tempoweights[119]);
+    unit->m_outputphase= unit->m_phase;
+    unit->m_outputtempo= unit->m_currtempo;
+    unit->m_outputgroove= unit->m_groove;
+    unit->m_outputphaseperblock= unit->m_phaseperblock;
 
 
-	unit->halftrig=0;
-	unit->q1trig=0;
-	unit->q2trig=0;
+
+    unit->m_calculationperiod= 0.5; //every half second; could also be additional argument to UGen
+    unit->m_calculationschedule= 0.0;
+
+    //printf("srate %f conversion factor %f frame period %f \n", unit->m_srate, unit->m_srateconversion, unit->m_frameperiod);
 
 
-	unit->mCalcFunc = (UnitCalcFunc)&BeatTrack2_next;
+    int bufnum = (int)(ZIN0(5)+0.001f);
+    if (bufnum >= unit->mWorld->mNumSndBufs)
+        bufnum = 0;
+
+    if (bufnum<0)
+        unit->m_weightingscheme = bufnum<2 ? 0 : 1;
+    else {
+        SndBuf *buf = unit->mWorld->mSndBufs + bufnum;
+        unit->m_tempoweights= buf;
+        unit->m_weightingscheme=2;
+    }
+
+    //printf("bufnum %d weightingscheme %d check %f %f\n", bufnum, unit->m_weightingscheme, unit->m_tempoweights[0], unit->m_tempoweights[119]);
+
+
+    unit->halftrig=0;
+    unit->q1trig=0;
+    unit->q2trig=0;
+
+
+    unit->mCalcFunc = (UnitCalcFunc)&BeatTrack2_next;
 }
 
 
 
 void BeatTrack2_Dtor(BeatTrack2 *unit)
 {
-	RTFree(unit->mWorld, unit->m_numphases);
+    RTFree(unit->mWorld, unit->m_numphases);
 
-	RTFree(unit->mWorld, unit->m_scores);
+    RTFree(unit->mWorld, unit->m_scores);
 
-	RTFree(unit->mWorld, unit->bestscore);
-	RTFree(unit->mWorld, unit->bestphase);
-	RTFree(unit->mWorld, unit->besttempo);
+    RTFree(unit->mWorld, unit->bestscore);
+    RTFree(unit->mWorld, unit->bestphase);
+    RTFree(unit->mWorld, unit->besttempo);
 
-	for (int j=0; j<unit->m_numfeatures; ++j)
-		RTFree(unit->mWorld, unit->m_pastfeatures[j]);
+    for (int j=0; j<unit->m_numfeatures; ++j)
+        RTFree(unit->mWorld, unit->m_pastfeatures[j]);
 
-	RTFree(unit->mWorld, unit->m_pastfeatures);
+    RTFree(unit->mWorld, unit->m_pastfeatures);
 }
 
 
@@ -197,132 +197,132 @@ void BeatTrack2_Dtor(BeatTrack2 *unit)
 //over phases and for each groove
 void calculatetemplate(BeatTrack2 *unit, int which, int j)
 {
-	int tmpindex;
+    int tmpindex;
 
-	int startcounter= unit->m_startcounter;
+    int startcounter= unit->m_startcounter;
 
-	int numphases= unit->m_numphases[which];
+    int numphases= unit->m_numphases[which];
 
-	float period= g_periods[which];
+    float period= g_periods[which];
 
-	float blockconvert= unit->m_krlength;
+    float blockconvert= unit->m_krlength;
 
-	float windowsize = unit->m_temporalwindowsize;
+    float windowsize = unit->m_temporalwindowsize;
 
-	int buffersize= unit->m_buffersize; //unit->m_fullwindowsize/unit->m_krlength; //in control blocks
+    int buffersize= unit->m_buffersize; //unit->m_fullwindowsize/unit->m_krlength; //in control blocks
 
-	float ** pastfeatures= unit->m_pastfeatures;
-	//unit->m_pastfeatures = (float**)RTAlloc(unit->mWorld, unit->m_numfeatures * sizeof(float*));
+    float ** pastfeatures= unit->m_pastfeatures;
+    //unit->m_pastfeatures = (float**)RTAlloc(unit->mWorld, unit->m_numfeatures * sizeof(float*));
 
-	int beatsfit= (int)(windowsize/period); //complete beats only, or also fit as many as possible?
+    int beatsfit= (int)(windowsize/period); //complete beats only, or also fit as many as possible?
 
-	float weight;  //compensation for number of events matched; may alter equation later
+    float weight;  //compensation for number of events matched; may alter equation later
 
-	switch (unit->m_weightingscheme)
-	{
-	case 0:
-		weight = 1.0f;	//flat
-		break;
-	case 1:
-		weight= 1.0f/(beatsfit*4); //compensate for number of time points tested
-		break;
-	case 2:
-		SndBuf * buf = unit->m_tempoweights;
-		if (buf->data)
-			weight = buf->data[which]; //user defined temmpo biases (usually a mask on allowed tempi)
-		else
-			weight = 1.f;
-		break;
-	}
+    switch (unit->m_weightingscheme)
+    {
+    case 0:
+        weight = 1.0f;  //flat
+        break;
+    case 1:
+        weight= 1.0f/(beatsfit*4); //compensate for number of time points tested
+        break;
+    case 2:
+        SndBuf * buf = unit->m_tempoweights;
+        if (buf->data)
+            weight = buf->data[which]; //user defined temmpo biases (usually a mask on allowed tempi)
+        else
+            weight = 1.f;
+        break;
+    }
 
-	int numfeatures= unit->m_numfeatures;
+    int numfeatures= unit->m_numfeatures;
 
-	float * scores = unit->m_scores;  //[2*numfeatures];
+    float * scores = unit->m_scores;  //[2*numfeatures];
 
-	float * bestscore = unit->bestscore;
-	int * bestphase = unit->bestphase;
-	int * besttempo = unit->besttempo;
-	int * bestgroove = unit->bestgroove;
+    float * bestscore = unit->bestscore;
+    int * bestphase = unit->bestphase;
+    int * besttempo = unit->besttempo;
+    int * bestgroove = unit->bestgroove;
 
-	for (int i=0; i<numphases; ++i) {
+    for (int i=0; i<numphases; ++i) {
 
-		//initialise scores
-		//for (j=0; j<2; ++j)
-		for (int k=0; k<numfeatures; ++k)
-			scores[2*k+j]=0.0;
+        //initialise scores
+        //for (j=0; j<2; ++j)
+        for (int k=0; k<numfeatures; ++k)
+            scores[2*k+j]=0.0;
 
-		float phaseadd = i*unit->m_phaseaccuracy;
+        float phaseadd = i*unit->m_phaseaccuracy;
 
-		//calculation for a particular phase of template
-		//for (j=0; j<2; ++j) {
+        //calculation for a particular phase of template
+        //for (j=0; j<2; ++j) {
 
-		for(int h=0; h<beatsfit; ++h) {
+        for(int h=0; h<beatsfit; ++h) {
 
-			for(int l=0; l<4; ++l) {
+            for(int l=0; l<4; ++l) {
 
-				float sep= phaseadd+ (h*period)+ ((g_sep[j*4+l]) * period);
-				float weight= g_weight[l];
+                float sep= phaseadd+ (h*period)+ ((g_sep[j*4+l]) * period);
+                float weight= g_weight[l];
 
-				int blocks= (int)((sep/blockconvert)+0.5); //round to nearest
+                int blocks= (int)((sep/blockconvert)+0.5); //round to nearest
 
-				//convert sep to control periods and find appropriate point in source data
-				int index= (startcounter+ buffersize - blocks)%(buffersize);
-
-
-				//widen over four either side
-				for (int m= (-4); m<5;++m) {
-
-					int actualindex= (index+buffersize+m)%(buffersize);
-
-					for (int k=0; k<numfeatures; ++k) {
-
-						int scoreindexnow = 2*k+j;
-
-						//could widen this value here, even based on cubic interpolation etc
-						scores[scoreindexnow] += weight * (g_weight2[m+4])* (pastfeatures[k][actualindex]);
-
-					}
-
-					//scores[2*k+j] += weight * (pastfeatures[k][index]);
+                //convert sep to control periods and find appropriate point in source data
+                int index= (startcounter+ buffersize - blocks)%(buffersize);
 
 
-				}
+                //widen over four either side
+                for (int m= (-4); m<5;++m) {
 
-			}
+                    int actualindex= (index+buffersize+m)%(buffersize);
 
-		}
-		//}
+                    for (int k=0; k<numfeatures; ++k) {
 
-		//update any winners from scores
-		//for (j=0; j<2; ++j) {
+                        int scoreindexnow = 2*k+j;
 
-		for (int k=0; k<numfeatures; ++k) {
+                        //could widen this value here, even based on cubic interpolation etc
+                        scores[scoreindexnow] += weight * (g_weight2[m+4])* (pastfeatures[k][actualindex]);
 
-			float scorenow= (scores[2*k+j]) * weight;
+                    }
 
-			//NEED TO STORE J IF PRESERVING SENSE OF GROOVE
+                    //scores[2*k+j] += weight * (pastfeatures[k][index]);
 
-			if(scorenow>bestscore[k]) {
 
-				tmpindex= numfeatures+k;
-				//shift up to make room
-				bestscore[tmpindex]= bestscore[k]; bestphase[tmpindex]= bestphase[k];
-				besttempo[tmpindex]= besttempo[k]; bestgroove[tmpindex]=bestgroove[k];
+                }
 
-				bestscore[k]= scorenow; bestphase[k]= i; besttempo[k]= which; bestgroove[k]=j;
+            }
 
-				//printf("bestscore %f bestphase %d besttempo %d bestgroove %d \n", bestscore[k],bestphase[k],besttempo[k], bestgroove[k]);
-			}
-			else if (scorenow>bestscore[numfeatures+k]) {
+        }
+        //}
 
-				tmpindex= numfeatures+k;
-				bestscore[tmpindex]= scorenow; bestphase[tmpindex]= i;
-				besttempo[tmpindex]= which; bestgroove[tmpindex]=j;
+        //update any winners from scores
+        //for (j=0; j<2; ++j) {
 
-			}
-		}
-		//}
-	}
+        for (int k=0; k<numfeatures; ++k) {
+
+            float scorenow= (scores[2*k+j]) * weight;
+
+            //NEED TO STORE J IF PRESERVING SENSE OF GROOVE
+
+            if(scorenow>bestscore[k]) {
+
+                tmpindex= numfeatures+k;
+                //shift up to make room
+                bestscore[tmpindex]= bestscore[k]; bestphase[tmpindex]= bestphase[k];
+                besttempo[tmpindex]= besttempo[k]; bestgroove[tmpindex]=bestgroove[k];
+
+                bestscore[k]= scorenow; bestphase[k]= i; besttempo[k]= which; bestgroove[k]=j;
+
+                //printf("bestscore %f bestphase %d besttempo %d bestgroove %d \n", bestscore[k],bestphase[k],besttempo[k], bestgroove[k]);
+            }
+            else if (scorenow>bestscore[numfeatures+k]) {
+
+                tmpindex= numfeatures+k;
+                bestscore[tmpindex]= scorenow; bestphase[tmpindex]= i;
+                besttempo[tmpindex]= which; bestgroove[tmpindex]=j;
+
+            }
+        }
+        //}
+    }
 
 }
 
@@ -334,89 +334,89 @@ void calculatetemplate(BeatTrack2 *unit, int which, int j)
 //a consistency check could also run to look at change from last time to this
 void finaldecision(BeatTrack2 *unit)
 {
-	int foundgood= 0;
-	int bestcandidate =0;
-	int bestpreviousmatchsum=0; //(-1);  //should be 0, but allowing different for now
-	float excess; //, consistency;
-				  //int exactmatches, closematches;  //can be out by a few indices on period; could match on tempo but not phase etc
-				  //combine these four factors in one master score?
+    int foundgood= 0;
+    int bestcandidate =0;
+    int bestpreviousmatchsum=0; //(-1);  //should be 0, but allowing different for now
+    float excess; //, consistency;
+                  //int exactmatches, closematches;  //can be out by a few indices on period; could match on tempo but not phase etc
+                  //combine these four factors in one master score?
 
-	for (int i=0; i<unit->m_numfeatures; ++i) {
+    for (int i=0; i<unit->m_numfeatures; ++i) {
 
-		int matchsum=0;
+        int matchsum=0;
 
-		float secondbest= unit->bestscore[unit->m_numfeatures+i];
-		excess= (secondbest!=0) ? (unit->bestscore[i]/ secondbest): unit->bestscore[i];
-		int tempo = unit->besttempo[i];
+        float secondbest= unit->bestscore[unit->m_numfeatures+i];
+        excess= (secondbest!=0) ? (unit->bestscore[i]/ secondbest): unit->bestscore[i];
+        int tempo = unit->besttempo[i];
 
-		//could check consistency too by looking at phase update from last prediction in same feature
+        //could check consistency too by looking at phase update from last prediction in same feature
 
-		for (int j=0; j<unit->m_numfeatures; ++j) {
+        for (int j=0; j<unit->m_numfeatures; ++j) {
 
-			if(j!=i) {
+            if(j!=i) {
 
-				if (abs(unit->besttempo[j]-tempo)<5) matchsum++;
+                if (abs(unit->besttempo[j]-tempo)<5) matchsum++;
 
-			}
+            }
 
-			//check over all previous features
-			if (abs(unit->besttempo[2*unit->m_numfeatures+j]- tempo)<5) matchsum++;
+            //check over all previous features
+            if (abs(unit->besttempo[2*unit->m_numfeatures+j]- tempo)<5) matchsum++;
 
-		}
+        }
 
-		//printf("i %d matchsum %d excess %f \n",i, matchsum, excess);
+        //printf("i %d matchsum %d excess %f \n",i, matchsum, excess);
 
-		if(secondbest!= 0) matchsum += (int)excess;
+        if(secondbest!= 0) matchsum += (int)excess;
 
-		//so must have at least one match //&& (excess>1.03)
-		if ((matchsum>bestpreviousmatchsum)) {bestcandidate = i; bestpreviousmatchsum= matchsum; foundgood=1;}
+        //so must have at least one match //&& (excess>1.03)
+        if ((matchsum>bestpreviousmatchsum)) {bestcandidate = i; bestpreviousmatchsum= matchsum; foundgood=1;}
 
-	}
-
-
-	//consistency: could require it to win twice; have a candidatepending which makes a phase prediction; only let through if prediction fulfilled
-
-	//unit->m_amortlength will be numtempi *2  = 240
-
-	float bestphase = fmod( ((unit->bestphase[bestcandidate] * unit->m_phaseaccuracy)  + (unit->m_krlength * (unit->m_amortlength)))/(unit->m_period), (float)1.0);
-
-	//if(unit->m_prediction) {
-
-	if ((fabs(bestphase - unit->m_predictphase)< ((2*(unit->m_phaseaccuracy))/unit->m_predictperiod)) && (fabs( (g_periods[unit->besttempo[bestcandidate]]) - unit->m_predictperiod ) <0.04) ) {
-
-		unit->m_period = unit->m_predictperiod;
-		//time elapsed since a known beat is phase of winner in seconds, to calculation start point, plus time for calculation (120 control blocks) divided by period, modulo 1.0
-		unit->m_phase= bestphase;
-		unit->m_currtempo = 1.f/unit->m_period;
-		unit->m_phaseperblock = unit->m_krlength/unit->m_period;
-
-	}
-
-	//}
-
-	//unit->m_prediction=false;
+    }
 
 
-	//if(foundgood) {
-	//if clear winner
+    //consistency: could require it to win twice; have a candidatepending which makes a phase prediction; only let through if prediction fulfilled
 
-	unit->m_predictperiod = g_periods[unit->besttempo[bestcandidate]];
+    //unit->m_amortlength will be numtempi *2  = 240
 
-	//time elapsed since a known beat is phase of winner in seconds, to calculation start point, plus time for calculation (120 control blocks) divided by period, modulo 1.0
-	unit->m_predictphase= fmod( ( (unit->bestphase[bestcandidate] * unit->m_phaseaccuracy)  + (unit->m_krlength * (unit->m_amortlength)) + unit->m_calculationperiod)/(unit->m_period),(float)1.0);
+    float bestphase = fmod( ((unit->bestphase[bestcandidate] * unit->m_phaseaccuracy)  + (unit->m_krlength * (unit->m_amortlength)))/(unit->m_period), (float)1.0);
+
+    //if(unit->m_prediction) {
+
+    if ((fabs(bestphase - unit->m_predictphase)< ((2*(unit->m_phaseaccuracy))/unit->m_predictperiod)) && (fabs( (g_periods[unit->besttempo[bestcandidate]]) - unit->m_predictperiod ) <0.04) ) {
+
+        unit->m_period = unit->m_predictperiod;
+        //time elapsed since a known beat is phase of winner in seconds, to calculation start point, plus time for calculation (120 control blocks) divided by period, modulo 1.0
+        unit->m_phase= bestphase;
+        unit->m_currtempo = 1.f/unit->m_period;
+        unit->m_phaseperblock = unit->m_krlength/unit->m_period;
+
+    }
+
+    //}
+
+    //unit->m_prediction=false;
+
+
+    //if(foundgood) {
+    //if clear winner
+
+    unit->m_predictperiod = g_periods[unit->besttempo[bestcandidate]];
+
+    //time elapsed since a known beat is phase of winner in seconds, to calculation start point, plus time for calculation (120 control blocks) divided by period, modulo 1.0
+    unit->m_predictphase= fmod( ( (unit->bestphase[bestcandidate] * unit->m_phaseaccuracy)  + (unit->m_krlength * (unit->m_amortlength)) + unit->m_calculationperiod)/(unit->m_period),(float)1.0);
 
 
 
-	//if(foundgood) {
-	////if clear winner
-	//
-	//unit->m_period = g_periods[unit->besttempo[bestcandidate]];
-	////time elapsed since a known beat is phase of winner in seconds, to calculation start point, plus time for calculation (120 control blocks) divided by period, modulo 1.0
-	//unit->m_phase= fmod( ((unit->bestphase[bestcandidate] * unit->m_phaseaccuracy)  + (unit->m_krlength * 120))/(unit->m_period), 1.0);
-	//
-	//unit->m_currtempo = 1.0/unit->m_period;
-	//unit->m_phaseperblock = unit->m_krlength/unit->m_period;
-	//}
+    //if(foundgood) {
+    ////if clear winner
+    //
+    //unit->m_period = g_periods[unit->besttempo[bestcandidate]];
+    ////time elapsed since a known beat is phase of winner in seconds, to calculation start point, plus time for calculation (120 control blocks) divided by period, modulo 1.0
+    //unit->m_phase= fmod( ((unit->bestphase[bestcandidate] * unit->m_phaseaccuracy)  + (unit->m_krlength * 120))/(unit->m_period), 1.0);
+    //
+    //unit->m_currtempo = 1.0/unit->m_period;
+    //unit->m_phaseperblock = unit->m_krlength/unit->m_period;
+    //}
 
 
 
@@ -425,150 +425,150 @@ void finaldecision(BeatTrack2 *unit)
 
 void BeatTrack2_next(BeatTrack2 *unit, int wrongNumSamples)
 {
-	//keep updating feature memories
-	unit->m_counter= (unit->m_counter+1)%(unit->m_buffersize);
+    //keep updating feature memories
+    unit->m_counter= (unit->m_counter+1)%(unit->m_buffersize);
 
-	int busnum = (int)(ZIN0(0)+0.001f);
+    int busnum = (int)(ZIN0(0)+0.001f);
 
-	//unit->m_features = unit->mWorld->mControlBus + busnum;
+    //unit->m_features = unit->mWorld->mControlBus + busnum;
 
-	float * features= unit->mWorld->mControlBus + busnum;
+    float * features= unit->mWorld->mControlBus + busnum;
 
-	//hmm, is this pointer guaranteed to stay the same? may have to update each time...
-	for (int j=0; j<unit->m_numfeatures; ++j) {
-		unit->m_pastfeatures[j][unit->m_counter]= features[j]; //unit->m_features[j];
-	}
+    //hmm, is this pointer guaranteed to stay the same? may have to update each time...
+    for (int j=0; j<unit->m_numfeatures; ++j) {
+        unit->m_pastfeatures[j][unit->m_counter]= features[j]; //unit->m_features[j];
+    }
 
-	unit->m_calculationschedule += unit->m_krlength;
+    unit->m_calculationschedule += unit->m_krlength;
 
-	//check for new calculation round
-	if(unit->m_calculationschedule> unit->m_calculationperiod) {
+    //check for new calculation round
+    if(unit->m_calculationschedule> unit->m_calculationperiod) {
 
-		unit->m_calculationschedule -= unit->m_calculationperiod;
+        unit->m_calculationschedule -= unit->m_calculationperiod;
 
-		//reset best scores and move old to previous slots
-		for (int i=0; i<2; ++i) {
+        //reset best scores and move old to previous slots
+        for (int i=0; i<2; ++i) {
 
-			int pos1= (2+i)*unit->m_numfeatures;
-			int pos2= i*unit->m_numfeatures;
+            int pos1= (2+i)*unit->m_numfeatures;
+            int pos2= i*unit->m_numfeatures;
 
-			for (int j=0; j<unit->m_numfeatures; ++j) {
-				unit->bestscore[pos1+j]= unit->bestscore[pos2+j];
-				unit->bestscore[pos2+j]= -9999.0;
-				unit->bestphase[pos1+j]= unit->bestphase[pos2+j];
-				unit->bestphase[pos2+j]= 0;
-				unit->besttempo[pos1+j]= unit->besttempo[pos2+j];
-				unit->besttempo[pos2+j]= 60;
-			}
+            for (int j=0; j<unit->m_numfeatures; ++j) {
+                unit->bestscore[pos1+j]= unit->bestscore[pos2+j];
+                unit->bestscore[pos2+j]= -9999.0;
+                unit->bestphase[pos1+j]= unit->bestphase[pos2+j];
+                unit->bestphase[pos2+j]= 0;
+                unit->besttempo[pos1+j]= unit->besttempo[pos2+j];
+                unit->besttempo[pos2+j]= 60;
+            }
 
-		}
+        }
 
-		//state 0 is do nothing
-		unit->m_amortisationstate=1;
-		unit->m_amortcount=0;
-		unit->m_amortlength=g_numtempi*2; //
-										  //unit->m_amortisationsteps=0;
+        //state 0 is do nothing
+        unit->m_amortisationstate=1;
+        unit->m_amortcount=0;
+        unit->m_amortlength=g_numtempi*2; //
+                                          //unit->m_amortisationsteps=0;
 
-		//store essential data
-		unit->m_startcounter = unit->m_counter;
+        //store essential data
+        unit->m_startcounter = unit->m_counter;
 
-		unit->m_currphase=unit->m_phase;
-	}
-
-
-	//keeps incrementing but will be reset with each calculation run
-	//unit->m_amortisationsteps=unit->m_amortisationsteps+1;
-
-	//if state nonzero do something
-	switch(unit->m_amortisationstate) {
-		case 0:
-			break; //do nothing case
-		case 1: //calculate acf
-			calculatetemplate(unit,unit->m_amortcount >> 1, unit->m_amortcount %2);
-
-			unit->m_amortcount=unit->m_amortcount+1;
-
-			if(unit->m_amortcount==unit->m_amortlength) {
-				unit->m_amortisationstate=2;
-				//unit->m_amortlength=1;
-				//unit->m_amortcount=0;
-			}
-				break;
-		case 2: //done calculating template matches, now decide whether to follow through
-			finaldecision(unit);
-			unit->m_amortisationstate=0;
-			break;
-
-		default:
-			break;
-	}
+        unit->m_currphase=unit->m_phase;
+    }
 
 
+    //keeps incrementing but will be reset with each calculation run
+    //unit->m_amortisationsteps=unit->m_amortisationsteps+1;
+
+    //if state nonzero do something
+    switch(unit->m_amortisationstate) {
+        case 0:
+            break; //do nothing case
+        case 1: //calculate acf
+            calculatetemplate(unit,unit->m_amortcount >> 1, unit->m_amortcount %2);
+
+            unit->m_amortcount=unit->m_amortcount+1;
+
+            if(unit->m_amortcount==unit->m_amortlength) {
+                unit->m_amortisationstate=2;
+                //unit->m_amortlength=1;
+                //unit->m_amortcount=0;
+            }
+                break;
+        case 2: //done calculating template matches, now decide whether to follow through
+            finaldecision(unit);
+            unit->m_amortisationstate=0;
+            break;
+
+        default:
+            break;
+    }
 
 
-	//test if impulse to output
-	unit->m_phase+=unit->m_phaseperblock;
 
-	//if(unit->m_counter%400==0) printf("phase %f period %f\n", unit->m_phase, unit->m_period);
 
-	//if not locked, update output phase from model phase, else keep a separate output phase
+    //test if impulse to output
+    unit->m_phase+=unit->m_phaseperblock;
 
-	float lock= ZIN0(4);
-	//printf("lock %f \n",lock);
+    //if(unit->m_counter%400==0) printf("phase %f period %f\n", unit->m_phase, unit->m_period);
 
-	if(lock<0.5f) {
+    //if not locked, update output phase from model phase, else keep a separate output phase
 
-		unit->m_outputphase= unit->m_phase;
-		unit->m_outputtempo= unit->m_currtempo;
-		unit->m_outputgroove= unit->m_groove;
-		unit->m_outputphaseperblock= unit->m_phaseperblock;
-	} else {
+    float lock= ZIN0(4);
+    //printf("lock %f \n",lock);
 
-		unit->m_outputphase+=unit->m_outputphaseperblock;
+    if(lock<0.5f) {
 
-	}
+        unit->m_outputphase= unit->m_phase;
+        unit->m_outputtempo= unit->m_currtempo;
+        unit->m_outputgroove= unit->m_groove;
+        unit->m_outputphaseperblock= unit->m_phaseperblock;
+    } else {
 
-	if (unit->m_phase >= 1.f) {unit->m_phase-= 1.f;}
+        unit->m_outputphase+=unit->m_outputphaseperblock;
 
-	//0 is beat, 1 is quaver, 2 is semiquaver, 3 is actual current tempo in bps
-	//so no audio accuracy with beats, just asap, may as well be control rate
-	ZOUT0(0)=0.0;
-	ZOUT0(1)=0.0;
-	ZOUT0(2)=0.0;
-	ZOUT0(3)=unit->m_outputtempo; //*0.016666667;
-	ZOUT0(4)=unit->m_outputphase;
-	ZOUT0(5)=unit->m_outputgroove;
+    }
 
-	//output beat
-	if (unit->m_outputphase >= 1.f) {
+    if (unit->m_phase >= 1.f) {unit->m_phase-= 1.f;}
 
-		//printf("beat \n");
+    //0 is beat, 1 is quaver, 2 is semiquaver, 3 is actual current tempo in bps
+    //so no audio accuracy with beats, just asap, may as well be control rate
+    ZOUT0(0)=0.0;
+    ZOUT0(1)=0.0;
+    ZOUT0(2)=0.0;
+    ZOUT0(3)=unit->m_outputtempo; //*0.016666667;
+    ZOUT0(4)=unit->m_outputphase;
+    ZOUT0(5)=unit->m_outputgroove;
 
-		unit->m_outputphase -= 1.f;
-		ZOUT0(0)=1.0;
-		ZOUT0(1)=1.0;
-		ZOUT0(2)=1.0;
-		unit->halftrig=0;
-		unit->q1trig=0;
-		unit->q2trig=0;
-	}
+    //output beat
+    if (unit->m_outputphase >= 1.f) {
 
-	if (unit->m_outputphase>=0.5 && unit->halftrig==0) {
-		ZOUT0(1)=1.0;
-		ZOUT0(2)=1.0;
-		unit->halftrig=1;
-	}
+        //printf("beat \n");
 
-	float groove= unit->m_outputgroove *0.07;
+        unit->m_outputphase -= 1.f;
+        ZOUT0(0)=1.0;
+        ZOUT0(1)=1.0;
+        ZOUT0(2)=1.0;
+        unit->halftrig=0;
+        unit->q1trig=0;
+        unit->q2trig=0;
+    }
 
-	if (unit->m_outputphase>=(0.25+groove) && unit->q1trig==0) {
-		ZOUT0(2)=1.0;
-		unit->q1trig=1;
-	}
+    if (unit->m_outputphase>=0.5 && unit->halftrig==0) {
+        ZOUT0(1)=1.0;
+        ZOUT0(2)=1.0;
+        unit->halftrig=1;
+    }
 
-	if (unit->m_outputphase>=(0.75+groove) && unit->q2trig==0) {
-		ZOUT0(2)=1.0;
-		unit->q2trig=1;
-	}
+    float groove= unit->m_outputgroove *0.07;
+
+    if (unit->m_outputphase>=(0.25+groove) && unit->q1trig==0) {
+        ZOUT0(2)=1.0;
+        unit->q1trig=1;
+    }
+
+    if (unit->m_outputphase>=(0.75+groove) && unit->q2trig==0) {
+        ZOUT0(2)=1.0;
+        unit->q2trig=1;
+    }
 
 }

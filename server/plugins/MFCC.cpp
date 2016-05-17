@@ -1,7 +1,7 @@
 /*
-	SuperCollider real time audio synthesis system
+    SuperCollider real time audio synthesis system
  Copyright (c) 2002 James McCartney. All rights reserved.
-	http://www.audiosynth.com
+    http://www.audiosynth.com
 
  This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -63,182 +63,182 @@ static float MFCC_prepareMel(MFCC *, float *);
 
 void MFCC_Ctor(MFCC* unit)
 {
-	//may want to check sampling rate here!
+    //may want to check sampling rate here!
 
-	unit->m_srate = unit->mWorld->mFullRate.mSampleRate;
+    unit->m_srate = unit->mWorld->mFullRate.mSampleRate;
 
-	//if sample rate is 88200 or 96000, assume taking double size FFT to start with
-	if(unit->m_srate > (44100.0*1.5)) unit->m_srate = unit->m_srate*0.5;
+    //if sample rate is 88200 or 96000, assume taking double size FFT to start with
+    if(unit->m_srate > (44100.0*1.5)) unit->m_srate = unit->m_srate*0.5;
 
-	if(((int)(unit->m_srate+0.01))==44100)
-	{
-		unit->m_startbin= g_startbin44100;
-		unit->m_endbin= g_endbin44100;
-		unit->m_cumulindex= g_cumulindex44100;
-		unit->m_bandweights= g_melbandweights44100;
-	}
-	else  //else 48000; potentially dangerous if it isn't! Fortunately, shouldn't write any data to unknown memory
-	{
-		unit->m_startbin= g_startbin48000;
-		unit->m_endbin= g_endbin48000;
-		unit->m_cumulindex= g_cumulindex48000;
-		unit->m_bandweights= g_melbandweights48000;
-	}
+    if(((int)(unit->m_srate+0.01))==44100)
+    {
+        unit->m_startbin= g_startbin44100;
+        unit->m_endbin= g_endbin44100;
+        unit->m_cumulindex= g_cumulindex44100;
+        unit->m_bandweights= g_melbandweights44100;
+    }
+    else  //else 48000; potentially dangerous if it isn't! Fortunately, shouldn't write any data to unknown memory
+    {
+        unit->m_startbin= g_startbin48000;
+        unit->m_endbin= g_endbin48000;
+        unit->m_cumulindex= g_cumulindex48000;
+        unit->m_bandweights= g_melbandweights48000;
+    }
 
-	//fixed for now
-	unit->m_numbands= 42;
+    //fixed for now
+    unit->m_numbands= 42;
 
-	unit->m_bands = (float*)RTAlloc(unit->mWorld, unit->m_numbands * sizeof(float));
+    unit->m_bands = (float*)RTAlloc(unit->mWorld, unit->m_numbands * sizeof(float));
 
-	Clear(unit->m_numbands, unit->m_bands);
+    Clear(unit->m_numbands, unit->m_bands);
 
-	unit->m_numcoefficients= (int)ZIN0(1);
+    unit->m_numcoefficients= (int)ZIN0(1);
 
-	//range checks
-	if(unit->m_numcoefficients<1){unit->m_numcoefficients=1;}
-	if(unit->m_numcoefficients>42){unit->m_numcoefficients=42;}
+    //range checks
+    if(unit->m_numcoefficients<1){unit->m_numcoefficients=1;}
+    if(unit->m_numcoefficients>42){unit->m_numcoefficients=42;}
 
-	unit->m_mfcc = (float*)RTAlloc(unit->mWorld, unit->m_numcoefficients * sizeof(float));
+    unit->m_mfcc = (float*)RTAlloc(unit->mWorld, unit->m_numcoefficients * sizeof(float));
 
-	Clear(unit->m_numcoefficients, unit->m_mfcc);
-	for (int j=0; j<unit->m_numcoefficients; ++j)
-		ZOUT0(j) = 0.f;
+    Clear(unit->m_numcoefficients, unit->m_mfcc);
+    for (int j=0; j<unit->m_numcoefficients; ++j)
+        ZOUT0(j) = 0.f;
 
-	unit->mCalcFunc = (UnitCalcFunc)&MFCC_next;
+    unit->mCalcFunc = (UnitCalcFunc)&MFCC_next;
 }
 
 
 void MFCC_Dtor(MFCC *unit)
 {
-	if(unit->m_mfcc)
-		RTFree(unit->mWorld, unit->m_mfcc);
-	if(unit->m_bands)
-		RTFree(unit->mWorld, unit->m_bands);
+    if(unit->m_mfcc)
+        RTFree(unit->mWorld, unit->m_mfcc);
+    if(unit->m_bands)
+        RTFree(unit->mWorld, unit->m_bands);
 }
 
 
 void MFCC_next(MFCC *unit, int wrongNumSamples)
 {
-	float fbufnum = ZIN0(0);
+    float fbufnum = ZIN0(0);
 
-	//next FFT bufffer ready, update
-	//assuming at this point that buffer precalculated for any resampling
-	if (fbufnum> -0.01f)
-		MFCC_dofft(unit, (uint32)fbufnum);
+    //next FFT bufffer ready, update
+    //assuming at this point that buffer precalculated for any resampling
+    if (fbufnum> -0.01f)
+        MFCC_dofft(unit, (uint32)fbufnum);
 
-	//always output sones
-	//float outval= unit->m_sones;
+    //always output sones
+    //float outval= unit->m_sones;
 
-	//printf("sones %f phontotal %f \n",outval, unit->m_phontotal);
+    //printf("sones %f phontotal %f \n",outval, unit->m_phontotal);
 
-	//number of outputs depends on numcoefficients
-	//control rate output
-	//ZOUT0(0)=unit->m_sones;
+    //number of outputs depends on numcoefficients
+    //control rate output
+    //ZOUT0(0)=unit->m_sones;
 
-	for (int k=0; k<unit->m_numcoefficients; ++k)
-		ZOUT0(k)= unit->m_mfcc[k];
+    for (int k=0; k<unit->m_numcoefficients; ++k)
+        ZOUT0(k)= unit->m_mfcc[k];
 }
 
 
 //calculation function once FFT data ready
 void MFCC_dofft(MFCC *unit, uint32 ibufnum)
 {
-	World *world = unit->mWorld;
+    World *world = unit->mWorld;
 
-	SndBuf *buf;
-	if (ibufnum >= world->mNumSndBufs) {
-		int localBufNum = ibufnum - world->mNumSndBufs;
-		Graph *parent = unit->mParent;
-		if(localBufNum <= parent->localBufNum) {
-			buf = parent->mLocalSndBufs + localBufNum;
-		} else {
-			buf = world->mSndBufs;
-		}
-	} else {
-		buf = world->mSndBufs + ibufnum;
-	}
-	LOCK_SNDBUF(buf);
+    SndBuf *buf;
+    if (ibufnum >= world->mNumSndBufs) {
+        int localBufNum = ibufnum - world->mNumSndBufs;
+        Graph *parent = unit->mParent;
+        if(localBufNum <= parent->localBufNum) {
+            buf = parent->mLocalSndBufs + localBufNum;
+        } else {
+            buf = world->mSndBufs;
+        }
+    } else {
+        buf = world->mSndBufs + ibufnum;
+    }
+    LOCK_SNDBUF(buf);
 
-	//int numbins = buf->samples - 2 >> 1;
+    //int numbins = buf->samples - 2 >> 1;
 
-	//assumed in this representation
-	ToComplexApx(buf);
+    //assumed in this representation
+    ToComplexApx(buf);
 
-	float * data= buf->data;
+    float * data= buf->data;
 
-	float mult= MFCC_prepareMel(unit, data);
-	//MFCC_prepareERB
+    float mult= MFCC_prepareMel(unit, data);
+    //MFCC_prepareERB
 
-	float * pbands= unit->m_bands;
+    float * pbands= unit->m_bands;
 
-	//now use cosine basis for transform; approximates principal components, compresses information into a smaller number of bands
-	//FFT is actually more expensive here, easiest just to calculate the basis decomposition straight off
+    //now use cosine basis for transform; approximates principal components, compresses information into a smaller number of bands
+    //FFT is actually more expensive here, easiest just to calculate the basis decomposition straight off
 
-	//hard coded 42 = max num bands because this is how the indexing in the dct source is set up
-	for (int k=0; k<unit->m_numcoefficients; ++k){
-		float sum=0.0;
+    //hard coded 42 = max num bands because this is how the indexing in the dct source is set up
+    for (int k=0; k<unit->m_numcoefficients; ++k){
+        float sum=0.0;
 
-		int base= k*42;
+        int base= k*42;
 
-		for (int j=0; j<unit->m_numbands; ++j) {
-			int index= base+j;
-			//sum+= (0.5*dct[index]+0.5)*pbands[j];
-			sum+= (dct[index])*pbands[j];
-		}
+        for (int j=0; j<unit->m_numbands; ++j) {
+            int index= base+j;
+            //sum+= (0.5*dct[index]+0.5)*pbands[j];
+            sum+= (dct[index])*pbands[j];
+        }
 
-		//could also divide by numcoefficients, but left off for compatibility between MFCCs extracted in different ways
-		unit->m_mfcc[k]= 0.25f*((sum*mult)+1.0f); //0.5*(0.5*(sum*mult)+0.5);
-	}
+        //could also divide by numcoefficients, but left off for compatibility between MFCCs extracted in different ways
+        unit->m_mfcc[k]= 0.25f*((sum*mult)+1.0f); //0.5*(0.5*(sum*mult)+0.5);
+    }
 }
 
 
 float MFCC_prepareMel(MFCC * unit, float * data)
 {
-	float * pbands= unit->m_bands;
+    float * pbands= unit->m_bands;
 
-	int * startbin= unit->m_startbin;
-	int * endbin= unit->m_endbin;
-	int * cumulindex= unit->m_cumulindex;
-	float * weights= unit->m_bandweights;
+    int * startbin= unit->m_startbin;
+    int * endbin= unit->m_endbin;
+    int * cumulindex= unit->m_cumulindex;
+    float * weights= unit->m_bandweights;
 
-	for (int k=0; k<unit->m_numbands; ++k){
-		int bandstart = startbin[k];
-		int bandend = endbin[k]; //p1 = endbin[k]+1;
+    for (int k=0; k<unit->m_numbands; ++k){
+        int bandstart = startbin[k];
+        int bandend = endbin[k]; //p1 = endbin[k]+1;
 
-		float bsum=0.f;
-		float real, imag, power;
-		int index, index2;
-		//float lastpower=0.0;
+        float bsum=0.f;
+        float real, imag, power;
+        int index, index2;
+        //float lastpower=0.0;
 
-		index2= cumulindex[k] - bandstart;
+        index2= cumulindex[k] - bandstart;
 
-		for (int j=bandstart; j < bandend; ++j) {
-			index = j+j;
-			real= data[index];
-			imag= data[index+1];
+        for (int j=bandstart; j < bandend; ++j) {
+            index = j+j;
+            real= data[index];
+            imag= data[index+1];
 
-			if(j==0)
-				power= real*real; //sc_abs(real); //dc
-			else
-				power = real*real + imag*imag; //sqrt((real*real) + (imag*imag));
+            if(j==0)
+                power= real*real; //sc_abs(real); //dc
+            else
+                power = real*real + imag*imag; //sqrt((real*real) + (imag*imag));
 
-			float multiplier = weights[index2 + j]; //[cumulindex[k] + (j-bandstart)]
+            float multiplier = weights[index2 + j]; //[cumulindex[k] + (j-bandstart)]
 
-			bsum += (power*multiplier);
+            bsum += (power*multiplier);
 
-		}
+        }
 
-		//either keep as double to preserve the small value
-		//pbands[k] = 10.f * (sc_log10((bsum< 1e-42? 1e-42: bsum)) + 5.f);
-		//or make sure value works as a float: 
-		//pbands[k] = 10.f * (sc_log10((bsum< 1e-20f? 1e-20f: bsum)) + 5.f);
-		//want to avoid negative values, dynamic range roughly around 11 powers of ten (110dB)
-		//pbands[k] = 10.f * (std::log10((bsum< 1e-5f? 1e-5f: bsum)) + 5.f);
-		pbands[k] = 10.f * (std::log10(sc_max(1e-5f, bsum)) +5.f); 
-	}
+        //either keep as double to preserve the small value
+        //pbands[k] = 10.f * (sc_log10((bsum< 1e-42? 1e-42: bsum)) + 5.f);
+        //or make sure value works as a float: 
+        //pbands[k] = 10.f * (sc_log10((bsum< 1e-20f? 1e-20f: bsum)) + 5.f);
+        //want to avoid negative values, dynamic range roughly around 11 powers of ten (110dB)
+        //pbands[k] = 10.f * (std::log10((bsum< 1e-5f? 1e-5f: bsum)) + 5.f);
+        pbands[k] = 10.f * (std::log10(sc_max(1e-5f, bsum)) +5.f); 
+    }
 
-	//float mult= 0.01; //(1.0/((float)unit->m_numcoefficients)); //0.01*(1.0/((float)unit->m_numcoefficients));
-	return 0.01f;
+    //float mult= 0.01; //(1.0/((float)unit->m_numcoefficients)); //0.01*(1.0/((float)unit->m_numcoefficients));
+    return 0.01f;
 }
 
 
@@ -258,36 +258,36 @@ float MFCC_prepareMel(MFCC * unit, float * data)
 //
 //int j,k;
 //
-//	float * pbands= unit->m_bands;
+//  float * pbands= unit->m_bands;
 //
-//	for (k=0; k<unit->m_numbands; ++k){
+//  for (k=0; k<unit->m_numbands; ++k){
 //
-//		int bandstart=eqlbandbins[k];
-//		//int bandend=eqlbandbins[k+1];
-//		int bandsize= eqlbandsizes[k];
-//		int bandend= bandstart+bandsize;
+//      int bandstart=eqlbandbins[k];
+//      //int bandend=eqlbandbins[k+1];
+//      int bandsize= eqlbandsizes[k];
+//      int bandend= bandstart+bandsize;
 //
-//		float bsum=0.0;
-//		float real, imag, power;
-//		int index;
-//		//float lastpower=0.0;
+//      float bsum=0.0;
+//      float real, imag, power;
+//      int index;
+//      //float lastpower=0.0;
 //
-//		for (j=bandstart; j<bandend;++j) {
-//			index = 2*j;
-//			real= data[index];
-//			imag= data[index+1];
+//      for (j=bandstart; j<bandend;++j) {
+//          index = 2*j;
+//          real= data[index];
+//          imag= data[index+1];
 //
-//			power = (real*real) + (imag*imag);
+//          power = (real*real) + (imag*imag);
 //
-//			//power of three combination
-//			bsum= bsum+(power*power*power);
+//          //power of three combination
+//          bsum= bsum+(power*power*power);
 //
-//		}
+//      }
 //
-//		float db= 10*((0.33334*log10(bsum)) + 4.8810017610244); //correct multipler until you get loudness output of 1!
+//      float db= 10*((0.33334*log10(bsum)) + 4.8810017610244); //correct multipler until you get loudness output of 1!
 //
-//		//convert via contour
-//		if(db<contours[k][0]) db=0;
+//      //convert via contour
+//      if(db<contours[k][0]) db=0;
 //        else if (db>contours[k][10]) db=phons[10];
 //        else {
 //
@@ -297,28 +297,28 @@ float MFCC_prepareMel(MFCC * unit, float * data)
 //                if(db<contours[k][j]) {
 //                    prop= (db-contours[k][j-1])/(contours[k][j]-contours[k][j-1]);
 //                    break;
-//				}
+//              }
 //
-//				if(j==10)
-//					prop=1.0;
+//              if(j==10)
+//                  prop=1.0;
 //            }
 //
 //            db= (1.0-prop)*phons[j-1]+ prop*phons[j];
-//			//printf("prop %f db %f j %d\n",prop,db,j);
+//          //printf("prop %f db %f j %d\n",prop,db,j);
 //
-//		}
+//      }
 //
-//		//spectralmasking, 6dB drop per frame?
-//		//try also with just take db
-//		pbands[k] = db; //sc_max(db, (unit->m_bands[k]) - tmask);
+//      //spectralmasking, 6dB drop per frame?
+//      //try also with just take db
+//      pbands[k] = db; //sc_max(db, (unit->m_bands[k]) - tmask);
 //
-//	}
+//  }
 //
 //
-//	//now use cosine basis for transform; approximates principal components, compresses information into a smaller number of bands
-//	//FFT is actually more expensive here, easiest just to calculate the basis decomposition straight off
-//	float mult= 0.01*(1.0/((float)unit->m_numcoefficients));
+//  //now use cosine basis for transform; approximates principal components, compresses information into a smaller number of bands
+//  //FFT is actually more expensive here, easiest just to calculate the basis decomposition straight off
+//  float mult= 0.01*(1.0/((float)unit->m_numcoefficients));
 //
-//	return mult;
+//  return mult;
 //}
 //

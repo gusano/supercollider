@@ -1,7 +1,7 @@
 /*
-	SuperCollider real time audio synthesis system
+    SuperCollider real time audio synthesis system
  Copyright (c) 2002 James McCartney. All rights reserved.
-	http://www.audiosynth.com
+    http://www.audiosynth.com
 
  This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -37,42 +37,42 @@ static void Loudness_dofft(Loudness *, uint32);
 
 void Loudness_Ctor(Loudness* unit)
 {
-	//may want to check sampling rate here!
+    //may want to check sampling rate here!
 
-	unit->m_numbands= 42;
+    unit->m_numbands= 42;
 
-	unit->m_ERBbands = (float*)RTAlloc(unit->mWorld, unit->m_numbands * sizeof(float));
+    unit->m_ERBbands = (float*)RTAlloc(unit->mWorld, unit->m_numbands * sizeof(float));
 
-	Clear(unit->m_numbands, unit->m_ERBbands);
+    Clear(unit->m_numbands, unit->m_ERBbands);
 
-	unit->m_sones=0;
-	//unit->m_phontotal=0;
+    unit->m_sones=0;
+    //unit->m_phontotal=0;
 
-	unit->mCalcFunc = (UnitCalcFunc)&Loudness_next;
-	Loudness_next(unit, 1);
+    unit->mCalcFunc = (UnitCalcFunc)&Loudness_next;
+    Loudness_next(unit, 1);
 }
 
 void Loudness_Dtor(Loudness *unit)
 {
-	RTFree(unit->mWorld, unit->m_ERBbands);
+    RTFree(unit->mWorld, unit->m_ERBbands);
 }
 
 void Loudness_next(Loudness *unit, int wrongNumSamples)
 {
-	float fbufnum = ZIN0(0);
+    float fbufnum = ZIN0(0);
 
-	//next FFT bufffer ready, update
-	//assuming at this point that buffer precalculated for any resampling
-	if (fbufnum > -0.01f)
-		Loudness_dofft(unit, (uint32)fbufnum);
+    //next FFT bufffer ready, update
+    //assuming at this point that buffer precalculated for any resampling
+    if (fbufnum > -0.01f)
+        Loudness_dofft(unit, (uint32)fbufnum);
 
-	//always output sones
-	//float outval= unit->m_sones;
+    //always output sones
+    //float outval= unit->m_sones;
 
-	//printf("sones %f phontotal %f \n",outval, unit->m_phontotal);
+    //printf("sones %f phontotal %f \n",outval, unit->m_phontotal);
 
-	//control rate output
-	ZOUT0(0)=unit->m_sones;
+    //control rate output
+    ZOUT0(0)=unit->m_sones;
 }
 
 //temporal masking over ERB bands: peaks take a while to decay
@@ -87,132 +87,132 @@ void Loudness_next(Loudness *unit, int wrongNumSamples)
 //calculation function once FFT data ready
 void Loudness_dofft(Loudness *unit, uint32 ibufnum)
 {
-	World *world = unit->mWorld;
-	//if (ibufnum >= world->mNumSndBufs) ibufnum = 0;
-	SndBuf *buf; // = world->mSndBufs + ibufnum;
-	//int numbins = buf->samples - 2 >> 1;
-	//support LocalBuf
+    World *world = unit->mWorld;
+    //if (ibufnum >= world->mNumSndBufs) ibufnum = 0;
+    SndBuf *buf; // = world->mSndBufs + ibufnum;
+    //int numbins = buf->samples - 2 >> 1;
+    //support LocalBuf
 
-	if (ibufnum >= world->mNumSndBufs) {
-		int localBufNum = ibufnum - world->mNumSndBufs;
-		Graph *parent = unit->mParent;
-		if(localBufNum <= parent->localBufNum) {
-			buf = parent->mLocalSndBufs + localBufNum;
-		} else {
-			buf = world->mSndBufs;
-		}
-	} else {
-		buf = world->mSndBufs + ibufnum;
-	}
-	LOCK_SNDBUF(buf);
+    if (ibufnum >= world->mNumSndBufs) {
+        int localBufNum = ibufnum - world->mNumSndBufs;
+        Graph *parent = unit->mParent;
+        if(localBufNum <= parent->localBufNum) {
+            buf = parent->mLocalSndBufs + localBufNum;
+        } else {
+            buf = world->mSndBufs;
+        }
+    } else {
+        buf = world->mSndBufs + ibufnum;
+    }
+    LOCK_SNDBUF(buf);
 
-	float * data= buf->data;
+    float * data= buf->data;
 
-	float loudsum=0.0;
+    float loudsum=0.0;
 
-	float smask= ZIN0(1);
-	float tmask= ZIN0(2);
+    float smask= ZIN0(1);
+    float tmask= ZIN0(2);
 
-	for (int k=0; k<unit->m_numbands; ++k){
+    for (int k=0; k<unit->m_numbands; ++k){
 
-		int bandstart=eqlbandbins[k];
-		//int bandend=eqlbandbins[k+1];
-		int bandsize= eqlbandsizes[k];
-		int bandend= bandstart+bandsize;
+        int bandstart=eqlbandbins[k];
+        //int bandend=eqlbandbins[k+1];
+        int bandsize= eqlbandsizes[k];
+        int bandend= bandstart+bandsize;
 
-		float bsum=0.0;
-		float real, imag, power;
-		int index;
-		float lastpower=0.0;
+        float bsum=0.0;
+        float real, imag, power;
+        int index;
+        float lastpower=0.0;
 
-		for (int h=bandstart; h<bandend;++h) {
-			index = 2*h;
-			real= data[index];
-			imag= data[index+1];
+        for (int h=bandstart; h<bandend;++h) {
+            index = 2*h;
+            real= data[index];
+            imag= data[index+1];
 
-			power = (real*real) + (imag*imag);
-
-
-			//would involve spectral masking here
-			power = sc_max(lastpower*smask,power); //sideways spectral masking with leaky integration
-			lastpower= power;
-
-			//psychophysical sensation; within critical band, sum using a p metric, (sum m^p)^(1/p)
-			//compresses the gain
-
-			//power of three combination
-			//bsum= bsum+(power*power*power);
-
-			//won't sum up power very well
-			//if(power>bsum) bsum=power;
-
-			bsum= bsum+power;
-
-		}
-
-		//store recips of bandsizes?
-		//why average? surely just take max or sum is better!
-		//bsum= bsum/bandsize;
-
-		//into dB, avoid log of 0
-		//float db= 10*log10((bsum*10000000)+0.001);
-		//float db= 10*log10((bsum*32382)+0.001);
-		//empricially derived 32382*2.348
-
-		float db= 10*log10((bsum*76032.936f)+0.001f); //correct multipler until you get loudness output of 1!
-
-		//correcting for power of three combination
-		//bsum=bsum+0.001;
-		//4.8810017610244 = log10(76032.936)
-		//float db= 10*((0.33334*log10(bsum)) + 4.8810017610244); //correct multipler until you get loudness output of 1!
+            power = (real*real) + (imag*imag);
 
 
-		//printf("bsum %f db %f \n",bsum,db);
+            //would involve spectral masking here
+            power = sc_max(lastpower*smask,power); //sideways spectral masking with leaky integration
+            lastpower= power;
 
-		//convert via contour
-		if(db<contours[k][0]) db=0;
-		else if (db>contours[k][10]) db=phons[10];
-		else {
+            //psychophysical sensation; within critical band, sum using a p metric, (sum m^p)^(1/p)
+            //compresses the gain
 
-			float prop=0.0;
-			int j;
-			for (j=1; j<11; ++j) {
-				if(db<contours[k][j]) {
-					prop= (db-contours[k][j-1])/(contours[k][j]-contours[k][j-1]);
-					break;
-				}
+            //power of three combination
+            //bsum= bsum+(power*power*power);
 
-				if(j==10)
-					prop=1.0;
-			}
+            //won't sum up power very well
+            //if(power>bsum) bsum=power;
 
-			db= (1.f-prop)*phons[j-1]+ prop*phons[j];
-			//printf("prop %f db %f j %d\n",prop,db,j);
-		}
+            bsum= bsum+power;
 
-		//spectralmasking, 6dB drop per frame?
-		//try also with just take db
-		unit->m_ERBbands[k] = sc_max(db, (unit->m_ERBbands[k]) - tmask);
+        }
 
-		//printf("db %f erbband %f \n",db, unit->m_ERBbands[k]);
+        //store recips of bandsizes?
+        //why average? surely just take max or sum is better!
+        //bsum= bsum/bandsize;
 
-		//must sum as intensities, not dbs once corrected, pow used to be other way around
-		//loudsum+= ((pow(10, 0.1*unit->m_ERBbands[k])-0.001)*0.0000308813538386); //
+        //into dB, avoid log of 0
+        //float db= 10*log10((bsum*10000000)+0.001);
+        //float db= 10*log10((bsum*32382)+0.001);
+        //empricially derived 32382*2.348
 
-		loudsum+= ((pow(10, 0.1*unit->m_ERBbands[k])-0.001)); //multiplier not needed since invert below; can trust no overflow?
-	}
+        float db= 10*log10((bsum*76032.936f)+0.001f); //correct multipler until you get loudness output of 1!
 
-	//total excitation, correct back to dB scale in phons
-	//float phontotal= 10*log10((loudsum*32382)+0.001);
-	float phontotal= 10*log10((loudsum)+0.001); //didn't use divisor above, so no need to restore here
+        //correcting for power of three combination
+        //bsum=bsum+0.001;
+        //4.8810017610244 = log10(76032.936)
+        //float db= 10*((0.33334*log10(bsum)) + 4.8810017610244); //correct multipler until you get loudness output of 1!
 
-	//unit->m_phontotal= phontotal;
-	//now to sones:
-	/* from Praat: Excitation.c  Sones = 2 ** ((Phones - 40) / 10)  */
-	unit->m_sones= pow (2.f, (phontotal - 40) / 10);
 
-	//printf("phontotal %f sones %f \n",phontotal, unit->m_sones);
+        //printf("bsum %f db %f \n",bsum,db);
 
-	//about 5 times per second
-	//if((unit->m_triggerid) && ((unit->m_frame%2==0))) SendTrigger(&unit->mParent->mNode, unit->m_triggerid, bestkey);
+        //convert via contour
+        if(db<contours[k][0]) db=0;
+        else if (db>contours[k][10]) db=phons[10];
+        else {
+
+            float prop=0.0;
+            int j;
+            for (j=1; j<11; ++j) {
+                if(db<contours[k][j]) {
+                    prop= (db-contours[k][j-1])/(contours[k][j]-contours[k][j-1]);
+                    break;
+                }
+
+                if(j==10)
+                    prop=1.0;
+            }
+
+            db= (1.f-prop)*phons[j-1]+ prop*phons[j];
+            //printf("prop %f db %f j %d\n",prop,db,j);
+        }
+
+        //spectralmasking, 6dB drop per frame?
+        //try also with just take db
+        unit->m_ERBbands[k] = sc_max(db, (unit->m_ERBbands[k]) - tmask);
+
+        //printf("db %f erbband %f \n",db, unit->m_ERBbands[k]);
+
+        //must sum as intensities, not dbs once corrected, pow used to be other way around
+        //loudsum+= ((pow(10, 0.1*unit->m_ERBbands[k])-0.001)*0.0000308813538386); //
+
+        loudsum+= ((pow(10, 0.1*unit->m_ERBbands[k])-0.001)); //multiplier not needed since invert below; can trust no overflow?
+    }
+
+    //total excitation, correct back to dB scale in phons
+    //float phontotal= 10*log10((loudsum*32382)+0.001);
+    float phontotal= 10*log10((loudsum)+0.001); //didn't use divisor above, so no need to restore here
+
+    //unit->m_phontotal= phontotal;
+    //now to sones:
+    /* from Praat: Excitation.c  Sones = 2 ** ((Phones - 40) / 10)  */
+    unit->m_sones= pow (2.f, (phontotal - 40) / 10);
+
+    //printf("phontotal %f sones %f \n",phontotal, unit->m_sones);
+
+    //about 5 times per second
+    //if((unit->m_triggerid) && ((unit->m_frame%2==0))) SendTrigger(&unit->mParent->mNode, unit->m_triggerid, bestkey);
 }
