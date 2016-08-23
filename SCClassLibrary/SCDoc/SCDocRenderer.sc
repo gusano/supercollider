@@ -2,7 +2,7 @@
 HTML renderer
 */
 SCDocHTMLRenderer {
-	classvar currentClass, currentImplClass, currentMethod, currArg;
+  classvar currentClass, currentImplClass, currentMethod, currArg;
 	classvar currentNArgs;
 	classvar footNotes;
 	classvar noParBreak;
