@@ -40,8 +40,8 @@ before_script:
 
 script:
 # build
- - iflin sudo make install
- - ifmac cmake --build . --config Release --target install
+ - iflin $TRAVIS_BUILD_DIR/.travis/script-linux.sh
+ - ifmac $TRAVIS_BUILD_DIR/.travis/script-osx.sh
 # test
  - $TRAVIS_BUILD_DIR/testsuite/sclang/launch_test.py $SCLANG
  - qpm test.run -l ./travis_test_run.json --path $SCLANG --include $HOME/Quarks
