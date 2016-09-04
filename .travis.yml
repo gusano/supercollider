@@ -5,6 +5,11 @@ os:
  - linux
  - osx
 
+env:
+  global:
+    - QT_PREFIX=$HOME/qt/gcc_64
+    - QT_PLUGIN_PATH=$QT_PREFIX/plugins
+
 sudo: required
 dist: trusty
 osx_image: xcode7.3
@@ -25,8 +30,6 @@ before_script:
  - mkdir BUILD
  - cd BUILD
 
- - export QT_PREFIX=$HOME/qt/gcc_64
- - export QT_PLUGIN_PATH=$QT_PREFIX/plugins
  - ifmac cmake -G"Xcode" -DCMAKE_PREFIX_PATH=`brew --prefix qt55` -DCMAKE_OSX_DEPLOYMENT_TARGET=10.7 .. --debug-output
  - iflin cmake -DSC_EL=no -DCMAKE_INSTALL_PREFIX:PATH=$PWD/Install -DCMAKE_BUILD_TYPE=Release .. --debug-output
 # some paths
