@@ -25,13 +25,11 @@ before_install:
  - ifmac .travis/before-install-osx.sh
 
 before_script:
- - iflin $TRAVIS_BUILD_DIR/.travis/lint.sh $TRAVIS_BUILD_DIR
  - iflin source /opt/qt55/bin/qt55-env.sh
- - mkdir BUILD
- - cd BUILD
+ - mkdir BUILD && cd BUILD
+ - iflin $TRAVIS_BUILD_DIR/.travis/before-script-linux.sh
+ - ifmac $TRAVIS_BUILD_DIR/.travis/before-script-osx.sh
 
- - ifmac cmake -G"Xcode" -DCMAKE_PREFIX_PATH=`brew --prefix qt55` -DCMAKE_OSX_DEPLOYMENT_TARGET=10.7 .. --debug-output
- - iflin cmake -DSC_EL=no -DCMAKE_INSTALL_PREFIX:PATH=$PWD/Install -DCMAKE_BUILD_TYPE=Release .. --debug-output
 # some paths
  - ifmac export SCLANG=$TRAVIS_BUILD_DIR/BUILD/Install/SuperCollider/SuperCollider.app/Contents/MacOS/sclang
  - iflin export SCLANG=$TRAVIS_BUILD_DIR/BUILD/Install/bin/sclang
