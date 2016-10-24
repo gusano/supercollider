@@ -20,5 +20,7 @@ FreeVerb2 : MultiOutUGen {
 		^channels
 	}
 
-	checkInputs { ^this.checkNInputs(2); }
+	checkInputs {
+		 ^this.checkNInputs(2);
+	}
 }
