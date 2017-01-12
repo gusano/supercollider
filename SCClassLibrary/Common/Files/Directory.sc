@@ -4,7 +4,7 @@
 */
 /*
 DirectoryEntry {
-	var <name, <pathName, <isDir=false, <isVisible;
+	var <name, <pathName, <isDir=false, <isVisible, <test;
 }
 
 Directory {
