@@ -1,4 +1,4 @@
-// These Unit Generators are instantiated by math operations on UGens
+// OKOK.. These Unit Generators are instantiated by math operations on UGens
 
 BasicOpUGen : UGen {
 	var <operator;
