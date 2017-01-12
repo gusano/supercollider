@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.11)
 
-# This makes sclang/scide work with a Qt installation at a fixed location.
+# Oh This makes sclang/scide work with a Qt installation at a fixed location.
 SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
