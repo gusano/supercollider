@@ -17,8 +17,10 @@ matrix:
       env: QT=true
 
 cache:
- - apt
- - bundler
+  apt: true
+  bundler: true
+  directories:
+    - $TRAVIS_BUILD_DIR/BUILD
 
 before_install:
  - |
