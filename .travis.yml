@@ -30,14 +30,10 @@ before_install:
       TRAVIS_COMMIT_RANGE="FETCH_HEAD...$TRAVIS_BRANCH"
     fi
 
-    if git diff --name-only $TRAVIS_COMMIT_RANGE | grep -qvE '(\.(md|scd|schelp|icns|ico|png|svg|aiff|wav)$)'
-    then
-      echo "BUILDING!!!"
-      exit
-    else
+    git diff --name-only $TRAVIS_COMMIT_RANGE | grep -qvE '(\.(md|scd|schelp|icns|ico|png|svg|aiff|wav)$)' || {
       echo "Only docs were updated, stopping build process."
       exit
-    fi
+    }
  - $TRAVIS_BUILD_DIR/.travis/before-install-$TRAVIS_OS_NAME.sh --qt=$QT
 
 before_script:
