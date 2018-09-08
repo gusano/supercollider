@@ -23,7 +23,6 @@
 #include "SC_AllocPool.h"
 //#include <assert.h>
 
-
 AdvancingAllocPool::AdvancingAllocPool()
 {
 	mAllocPool = 0;
