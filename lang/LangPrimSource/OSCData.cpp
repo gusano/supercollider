@@ -1,4 +1,5 @@
 /*
+   BLA
 	SuperCollider real time audio synthesis system
     Copyright (c) 2002 James McCartney. All rights reserved.
 	http://www.audiosynth.com
