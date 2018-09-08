@@ -26,14 +26,14 @@ cache:
 
 before_install:
  - |
-    if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
-      TRAVIS_COMMIT_RANGE="FETCH_HEAD...$TRAVIS_BRANCH"
-    fi
-
-    git diff --name-only $TRAVIS_COMMIT_RANGE | grep -vE '(\.md$)|(^(examples))' || {
-      echo "Only docs or examples were updated, stopping build process."
+    set -e
+    # fail loudly when force-pushed
+    MODIFIED_FILES=$(git diff --name-only $TRAVIS_COMMIT_RANGE)
+    # waiting for native solution https://github.com/travis-ci/travis-ci/issues/6301
+    if ! echo ${MODIFIED_FILES} | grep -qvE '(\.md$)|(^examples)/'; then
+      echo "Only docs were updated, stopping build process."
       exit
-    }
+    fi
     echo "BUILDING"
     exit
  - $TRAVIS_BUILD_DIR/.travis/before-install-$TRAVIS_OS_NAME.sh --qt=$QT
