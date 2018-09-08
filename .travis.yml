@@ -25,7 +25,15 @@ cache:
  - ccache
 
 before_install:
-  - ./.travis/maybe-skip-travis.sh || travis_terminate 1
+ - |
+  set -e
+  MODIFIED_FILES=$(git diff --name-only $TRAVIS_COMMIT_RANGE)
+  if ! echo ${MODIFIED_FILES} | grep -qvE '(\.md$)|(^examples)/'; then
+    echo "Only docs were updated, stopping build process."
+    exit
+  fi
+  echo "BUILDING"
+  exit
  - $TRAVIS_BUILD_DIR/.travis/before-install-$TRAVIS_OS_NAME.sh --qt=$QT
 
 before_script:
