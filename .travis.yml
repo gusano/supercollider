@@ -25,7 +25,7 @@ cache:
  - ccache
 
 before_install:
- - ./.travis/maybe-skip-travis.sh
+  - ./.travis/maybe-skip-travis.sh || travis_terminate 1
  - $TRAVIS_BUILD_DIR/.travis/before-install-$TRAVIS_OS_NAME.sh --qt=$QT
 
 before_script:
