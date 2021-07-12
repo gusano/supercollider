@@ -518,3 +518,6 @@ code::
 ~def.specs.amp.postln;
 )
 ::
+
+subsection:: SynthDef issues
+Some insights about common SynthDef issues can be found on the FAQ link::Guides/UserFAQ#SynthDef Issues#SynthDef Issues::
