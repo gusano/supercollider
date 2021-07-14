@@ -41,7 +41,6 @@ This value will be added to the output.
 Examples::
 
 code::
-
 { RHPF.ar(Saw.ar(200,0.1), FSinOsc.kr(XLine.kr(0.7,300,20), 0, 3600, 4000), 0.2) }.play;
 
 (
@@ -49,6 +48,15 @@ code::
 	SinOsc.ar(ctl * 200 + 500);
 }.play;
 )
-
 ::
 
+A babbling brook by James McCartney 2007 link::http://www.listarc.bham.ac.uk/lists/sc-users-2007/msg02698.html::.
+
+code::
+{
+  ({RHPF.ar(OnePole.ar(BrownNoise.ar, 0.99), LPF.ar(BrownNoise.ar, 14)
+  * 400 + 500, 0.03, 0.003)}!2)
+  + ({RHPF.ar(OnePole.ar(BrownNoise.ar, 0.99), LPF.ar(BrownNoise.ar, 20)
+  * 800 + 1000, 0.03, 0.005)}!2)
+}.play
+::
